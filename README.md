@@ -27,3 +27,9 @@ https://github.com/raulmur/ORB_SLAM2
 
 # VPStest
 Evaluate Compressed Map
+
+## Usage
+```
+./VPStest INPUT_DATABASE.bin OUPUT_PNPINLIER_RATIO.txt OUTPUT_POSE.txt
+```
+
