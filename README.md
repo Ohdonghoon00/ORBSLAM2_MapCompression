@@ -8,8 +8,9 @@
 
 
 ## Usage
-### Compression ratio and b
-fix parameter in `ORB_SLAM2/src/gurobi_helper.cpp`
+### Compressed Parameter
+fix parameter b and compression ratio
+in `ORB_SLAM2/src/gurobi_helper.cpp`
 
 ### ouput result
 fix path `ORB_SLAM2/Examples/Stereo/stereo_kitti.cc`
