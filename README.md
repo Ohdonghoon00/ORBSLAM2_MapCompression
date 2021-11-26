@@ -12,10 +12,10 @@
 fix parameter b and compression ratio
 in `ORB_SLAM2/src/gurobi_helper.cpp`
 
-### ouput result
-fix path `ORB_SLAM2/Examples/Stereo/stereo_kitti.cc`
+### output result
+fix path in `ORB_SLAM2/Examples/Stereo/stereo_kitti.cc`
 
-Ex) kitti 00 dataset
+Ex) Kitti 00 dataset
 ```
 cd ~/ORBSLAM2_MapCompression/ORB_SLAM2/
 ./Examples/Stereo/stereo_kitti Vocabulary/ORBvoc.txt Examples/Stereo/KITTI00-02.yaml PATH_TO_DATASET_FOLDER/dataset/sequences/00
@@ -29,7 +29,13 @@ https://github.com/raulmur/ORB_SLAM2
 Evaluate Compressed Map
 
 ## Usage
+
+### output result
+fix path in `VPStest/main.cpp` 
+
+Ex/ Kitti 00 dataset
 ```
-./VPStest INPUT_DATABASE.bin OUPUT_PNPINLIER_RATIO.txt OUTPUT_POSE.txt
+cd ~/ORBSLAM2_MapCompression/VPStest/build/
+./VPStest INPUT_DATABASE.bin ../Vocabulary/ORBvoc.txt PATH_TO_DATASET_FOLDER/dataset/sequences/00
 ```
 
