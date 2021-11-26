@@ -1,6 +1,6 @@
 # ORBSLAM2_MapCompression
 
-## Compression stereo SLAM
+## Compress stereo SLAM
 `ORB_SLAM2/Examples/Stereo/stereo_kitti.cc`
 
 ## Compression ratio
