@@ -30,19 +30,6 @@ BOOST_SERIALIZATION_SPLIT_FREE(::cv::Mat)
 namespace boost{
     namespace serialization {
 
-    /* serialization for DBoW2 BowVector */
-    // template<class Archive>
-    // void serialize(Archive &ar, DBoW2::BowVector &BowVec, const unsigned int file_version)
-    // {
-    //     ar & boost::serialization::base_object<DBoW2::BowVector::super>(BowVec);
-    // }
-    // /* serialization for DBoW2 FeatureVector */
-    // template<class Archive>
-    // void serialize(Archive &ar, DBoW2::FeatureVector &FeatVec, const unsigned int file_version)
-    // {
-    //     ar & boost::serialization::base_object<DBoW2::FeatureVector::super>(FeatVec);
-    // }
-
     /* serialization for CV KeyPoint */
     template<class Archive>
     void serialize(Archive &ar, ::cv::KeyPoint &kf, const unsigned int file_version)

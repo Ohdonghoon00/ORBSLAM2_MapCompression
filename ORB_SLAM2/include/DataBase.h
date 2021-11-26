@@ -9,6 +9,8 @@
 
 
 
+namespace ORB_SLAM2
+{
 
 class DataBase
 {
@@ -42,3 +44,5 @@ public:
 
 
 };
+
+}

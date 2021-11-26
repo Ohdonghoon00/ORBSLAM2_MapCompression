@@ -23,6 +23,8 @@
 #include "System.h"
 #include "Converter.h"
 #include "gurobi_helper.h"
+#include "DataBase.h"
+#include "BoostArchiver.h"
 #include <thread>
 #include <pangolin/pangolin.h>
 #include <iomanip>
@@ -71,6 +73,9 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         exit(-1);
     }
     cout << "Vocabulary loaded!" << endl << endl;
+
+    // Create DataBase ( Save DataBase.h After SLAM )
+    DB = new DataBase();
 
     //Create KeyFrame Database
     mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -533,6 +538,74 @@ std::cout << " Optimize model ... " << std:: endl;
         }
     }
 std::cout << " Finish Map Compression" << std::endl;
+}
+
+void System::SaveDataBase(std::string filepath)
+{
+    // DataBase.h
+    std::cout << " Save DataBase " << std::endl;
+    std::vector<ORB_SLAM2::KeyFrame*> AllKFptr = mpMap->GetAllKeyFrames();
+    std::vector<ORB_SLAM2::MapPoint*> AllMpptr = mpMap->GetAllMapPoints();
+    std::sort(AllKFptr.begin(), AllKFptr.end(), ORB_SLAM2::KeyFrame::lId);
+    
+    std::cout << " Keyframe num : " << AllKFptr.size() << std::endl;
+    std::cout << " Landmarks num : " << AllMpptr.size() << std::endl;
+
+    // Storage Map info
+    for(size_t i = 0; i < AllMpptr.size(); i++){
+        DB->Landmarks[i].x = (AllMpptr[i]->GetWorldPos()).at<float>(0, 0);
+        DB->Landmarks[i].y = (AllMpptr[i]->GetWorldPos()).at<float>(1, 0);
+        DB->Landmarks[i].z = (AllMpptr[i]->GetWorldPos()).at<float>(2, 0);
+        DB->Descriptors.push_back(AllMpptr[i]->GetDescriptor());
+    }
+
+    // Storage KF info
+    for(size_t i = 0; i < AllKFptr.size(); i++){
+        for(size_t j = 0; j < AllMpptr.size(); j++){
+            bool isinKF = AllMpptr[j]->IsInKeyFrame(AllKFptr[i]);
+            if(isinKF) DB->KFtoMPIdx[i].push_back(j);
+        }
+        DB->timestamps.push_back(AllKFptr[i]->mTimeStamp);
+
+    }
+
+    // Saved DataBase to Binary file
+    std::ofstream out(filepath, std::ios_base::binary);
+    if (!out)
+    {
+        std::cout << "Cannot Write to Database File: "  << std::endl;
+        exit(-1);
+    }
+    boost::archive::binary_oarchive oa(out, boost::archive::no_header);
+    oa << DB;
+    out.close();
+
+}
+
+void System::SavePose(std::string filepath)
+{
+    std::cout << " Save timestamp + trajectory " << std::endl;
+    ofstream file;
+    std::vector<ORB_SLAM2::KeyFrame*> AllKFptr = mpMap->GetAllKeyFrames();
+    
+    file.open(filepath);
+    for(size_t i = 0; i < AllKFptr.size(); i++){
+
+        cv::Mat cam_pose = AllKFptr[i]->GetPose();
+        cam_pose = cam_pose.inv();
+        
+        Eigen::Matrix3f rot;
+        rot <<  cam_pose.at<float>(0, 0), cam_pose.at<float>(0, 1), cam_pose.at<float>(0, 2),
+                cam_pose.at<float>(1, 0), cam_pose.at<float>(1, 1), cam_pose.at<float>(1, 2),
+                cam_pose.at<float>(2, 0), cam_pose.at<float>(2, 1), cam_pose.at<float>(2, 2);
+        Eigen::Quaternionf q(rot);
+
+        file << AllKFptr[i]-> mTimeStamp << " " << 
+                cam_pose.at<float>(0, 3) << " " << cam_pose.at<float>(1, 3) << " " << cam_pose.at<float>(2, 3) << " " <<
+                q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
+    }
+
+     file.close();     
 }
 
 } //namespace ORB_SLAM

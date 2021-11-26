@@ -30,7 +30,6 @@
 
 #include<opencv2/core/core.hpp>
 #include "Converter.h"
-#include "VPStest.h"
 #include<System.h>
 #include "DataBase.h"
 #include <ctime>
@@ -140,98 +139,22 @@ int main(int argc, char **argv)
 
     
     // Map Compression
-    SLAM.MapCompression();
+    // SLAM.MapCompression();
 
+    // Save in Database.h
+    SLAM.SaveDataBase("Kitti00_DB_original.bin");
 
+    // Save Timestamp + Trajectory result to # time tx ty tz qx qy qz qw
+    SLAM.SavePose("Kitti00_DB_original_result.txt");
 
-
-
-
-
-
-
-
-    // DataBase.h
-    std::cout << " Save DataBase " << std::endl;
-    std::vector<ORB_SLAM2::KeyFrame*> AllKFptr = SLAM.mpMap->GetAllKeyFrames();
-    std::vector<ORB_SLAM2::MapPoint*> AllMpptr = SLAM.mpMap->GetAllMapPoints();
-    std::sort(AllKFptr.begin(), AllKFptr.end(), ORB_SLAM2::KeyFrame::lId);
-    
-    DataBase DB;
-    std::cout << " Keyframe num : " << AllKFptr.size() << std::endl;
-    std::cout << " Landmarks num : " << AllMpptr.size() << std::endl;
-
-    // Storage Map info
-    for(size_t i = 0; i < AllMpptr.size(); i++){
-        DB.Landmarks[i].x = (AllMpptr[i]->GetWorldPos()).at<float>(0, 0);
-        DB.Landmarks[i].y = (AllMpptr[i]->GetWorldPos()).at<float>(1, 0);
-        DB.Landmarks[i].z = (AllMpptr[i]->GetWorldPos()).at<float>(2, 0);
-        DB.Descriptors.push_back(AllMpptr[i]->GetDescriptor());
-    }
-
-    // Storage KF info
-    for(size_t i = 0; i < AllKFptr.size(); i++){
-        for(size_t j = 0; j < AllMpptr.size(); j++){
-            bool isinKF = AllMpptr[j]->IsInKeyFrame(AllKFptr[i]);
-            if(isinKF) DB.KFtoMPIdx[i].push_back(j);
-        }
-        DB.timestamps.push_back(AllKFptr[i]->mTimeStamp);
-
-    }
-
-    
-
-    // Save DataBase.h
-    std::ofstream out("Kitti00_DB_b30_30%.bin", std::ios_base::binary);
-    if (!out)
-    {
-        std::cout << "Cannot Write to Database File: "  << std::endl;
-        exit(-1);
-    }
-    boost::archive::binary_oarchive oa(out, boost::archive::no_header);
-    oa << DB;
-    out.close();
-
-    // Load DataBase.h
-    // std::ifstream in("Kitti00_DB_original.bin", std::ios_base::binary);
-    // if (!in)
-    // {
-    //     std::cout << "Cannot  You need create it first!" << std::endl;
-    //     return false;
-    // }
-    // boost::archive::binary_iarchive ia(in, boost::archive::no_header);
-    // ia >> DB;
-    // in.close();
-
-    // Save Timestamp + Trajectory Result 
-    std::cout << " Save timestamp + trajectory " << std::endl;
-    ofstream file;
-    file.open("Kitti00_DB_b30_30%_result.txt");
-    for(size_t i = 0; i < AllKFptr.size(); i++){
-        cv::Mat cam_pose = AllKFptr[i]->GetPose();
-        cam_pose = cam_pose.inv();
-        // cv::Mat translation = AllKFptr[i]->GetTranslation();
-        // cv::Mat rotation = AllKFptr[i]->GetRotation();
-        
-        Eigen::Matrix3f rot;
-        rot <<  cam_pose.at<float>(0, 0), cam_pose.at<float>(0, 1), cam_pose.at<float>(0, 2),
-                cam_pose.at<float>(1, 0), cam_pose.at<float>(1, 1), cam_pose.at<float>(1, 2),
-                cam_pose.at<float>(2, 0), cam_pose.at<float>(2, 1), cam_pose.at<float>(2, 2);
-        Eigen::Quaternionf q(rot);
-
-        file << AllKFptr[i]-> mTimeStamp << " " << 
-                cam_pose.at<float>(0, 3) << " " << cam_pose.at<float>(1, 3) << " " << cam_pose.at<float>(2, 3) << " " <<
-                q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
-    }
-
-     file.close();
-
+   
 
 std::cout << std::endl;
 
     // Visualize CompressionMap
     // DrawMapCompression(CpMp);
-    std::cout << " Finish Map Compression " << std::endl;
+
+
     return 0;
 }
 
@@ -274,6 +197,15 @@ void LoadImages(const string &strPathToSequence, vector<string> &vstrImageLeft,
 
 
 }
+
+
+
+
+
+
+
+
+
             
 
     

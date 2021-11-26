@@ -37,6 +37,7 @@
 #include "ORBVocabulary.h"
 #include "Viewer.h"
 #include "gurobi_helper.h"
+#include "DataBase.h"
 #include "MapCompressionViewer.h"
 
 namespace ORB_SLAM2
@@ -48,6 +49,7 @@ class Map;
 class Tracking;
 class LocalMapping;
 class LoopClosing;
+class DataBase;
 
 class System
 {
@@ -126,12 +128,19 @@ public:
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
     void MapCompression();
+    void SaveDataBase(std::string filepath);
+    void SavePose(std::string filepath);
+
+
+
+private:
 
     // Map structure that stores the pointers to all KeyFrames and MapPoints.
     Map* mpMap;
 
-private:
-
+    // DataBase
+    DataBase* DB;
+    
     // Input sensor
     eSensor mSensor;
 

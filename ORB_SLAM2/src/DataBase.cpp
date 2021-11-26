@@ -2,6 +2,8 @@
 
 
 
+namespace ORB_SLAM2
+{
 
 template<class Archive>
 void DataBase::serialize(Archive &ar, const unsigned int version)
@@ -37,4 +39,6 @@ std::vector<cv::Point3f> DataBase::GetKF3dPoint(int idx)
     }
 
     return KFLandmark;
+}
+
 }
