@@ -546,7 +546,6 @@ void System::SaveDataBase(std::string filepath)
     std::cout << " Save DataBase " << std::endl;
     std::vector<ORB_SLAM2::KeyFrame*> AllKFptr = mpMap->GetAllKeyFrames();
     std::vector<ORB_SLAM2::MapPoint*> AllMpptr = mpMap->GetAllMapPoints();
-    std::sort(AllKFptr.begin(), AllKFptr.end(), ORB_SLAM2::KeyFrame::lId);
     
     std::cout << " Keyframe num : " << AllKFptr.size() << std::endl;
     std::cout << " Landmarks num : " << AllMpptr.size() << std::endl;
@@ -565,10 +564,14 @@ void System::SaveDataBase(std::string filepath)
             bool isinKF = AllMpptr[j]->IsInKeyFrame(AllKFptr[i]);
             if(isinKF) DB->KFtoMPIdx[i].push_back(j);
         }
-        DB->timestamps.push_back(AllKFptr[i]->mTimeStamp);
 
     }
-
+    
+    std::sort(AllKFptr.begin(), AllKFptr.end(), ORB_SLAM2::KeyFrame::lId);
+    for(size_t i = 0; i < AllKFptr.size(); i++){    
+        DB->timestamps.push_back(AllKFptr[i]->mTimeStamp);
+    }
+    
     // Saved DataBase to Binary file
     std::ofstream out(filepath, std::ios_base::binary);
     if (!out)

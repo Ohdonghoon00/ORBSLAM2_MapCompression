@@ -17,7 +17,6 @@
 #include<iomanip>
 #include<chrono>
 #include <cstdio>
-// #include <thread>
 #include <pangolin/pangolin.h>
 
 using namespace std;
@@ -27,7 +26,9 @@ using namespace DBoW2;
 int main(int argc, char **argv)
 {
 
-    DataBase DB;
+    DataBase* DB;
+    clock_t start, finish;
+    double duration;
     int image_num = 0;
 
 
@@ -41,25 +42,38 @@ int main(int argc, char **argv)
     ia >> DB;
     in.close();
 
+    
     // Load voc
     std::cout << "load voc" << std::endl;
     ORBVocabulary voc;
-    voc.loadFromTextFile("../Vocabulary/ORBvoc.txt");
+    voc.loadFromTextFile(argv[2]);
     std::cout << "copy voc to db" << std::endl;
     OrbDatabase db(voc, false, 0); // false = do not use direct index
 
     // Input DB descriptor to voc
-    for(size_t i = 0; i < DB.KFtoMPIdx.size(); i++){
+    for(size_t i = 0; i < DB->KFtoMPIdx.size(); i++){
         std::vector<cv::Mat> KFDescriptor;
         KFDescriptor.clear();
-        KFDescriptor = MatToVectorMat(DB.GetKFMatDescriptor(i));
-        std::cout << " KF num : " << i << "     Keypoint num : " << (DB.GetKFMatDescriptor(i)).size() << std::endl;  
+        KFDescriptor = MatToVectorMat(DB->GetKFMatDescriptor(i));
+        std::cout << " KF num : " << i << "     Keypoint num : " << (DB->GetKFMatDescriptor(i)).size() << std::endl;  
         db.add(KFDescriptor);
     }
 
+    std::string DataPath = argv[3];
+    
+    // Load Query Img
+    std::cout << " Input Query Img " << std::endl;
+    std::string QueryPath = DataPath + "/image_1/%06d.png";
+    cv::VideoCapture video;
+    if(!video.open(QueryPath)){
+        std::cout << " No query image " << std::endl;
+        return -1;
+    }
+    
     // Load timestamp
+    std::string timestampPath = DataPath + "/times.txt";
     ifstream s;
-    s.open("../times.txt");
+    s.open(timestampPath);
     std::string line;
     std::vector<double> timestamps;
 
@@ -67,28 +81,20 @@ int main(int argc, char **argv)
         timestamps.push_back(std::stod(line));
     
     s.close();
-    
-    // Load Query Img
-    std::cout << " Input Query Img " << std::endl;
-    std::string QueryPath = "/media/donghoon/1462-5978/kitti/sequences/00/image_1/%06d.png";
-    // std::string QueryPath = "/media/donghoon/1462-5978/kitti/sequences/00/image_0/000095.png";
-    cv::VideoCapture video;
-    if(!video.open(QueryPath)){
-        std::cout << " No query image " << std::endl;
-        return -1;
-    }
 
     // Save PnPinlier result
     ofstream file;
-    file.open(argv[2]);
+    file.open("Kitti00_VPStest_original_PnP_Result");
 
     // Save trajectory result
     ofstream traj_file;
-    traj_file.open(argv[3]);
+    traj_file.open("Kitti00_VPStest_original_Pose_result");
 
+    start = clock();
     ///////// VPS TEST //////////
     while(true)
     {
+        
         cv::Mat QueryImg;
         video >> QueryImg;
         if(QueryImg.empty()) {
@@ -117,7 +123,6 @@ int main(int argc, char **argv)
         // "       Score : " << ret[0].Score << std::endl;
         VPStest.SetCandidateKFid(ret);
 
-        std::cout << std::endl;
         
         // FindReferenceKF
         std::cout << "Find Reference Keyframe !! " << std::endl;
@@ -126,30 +131,36 @@ int main(int argc, char **argv)
 
         // VPS test to ReferenceKF
         Eigen::Matrix4f Pose;
-        double PnPInlierRatio = VPStest.VPStestToReferenceKF(DB, QDescriptors, QKeypoints, ReferenceKFId, Pose);
+        int InlierNum;
+        double PnPInlierRatio = VPStest.VPStestToReferenceKF(DB, QDescriptors, QKeypoints, ReferenceKFId, Pose, InlierNum);
         std::cout << " PnPInlier Ratio of Selected Keyframe : " << PnPInlierRatio << std::endl;
         Eigen::Quaternionf q = ToQuaternion(Pose);
 
         std::cout << Pose << std::endl;
+        
         // Save timestamp + trajectory
-        auto it = find(DB.timestamps.begin(),DB.timestamps.end(),timestamps[image_num]);
-        if(it != DB.timestamps.end()){
+        auto it = find(DB->timestamps.begin(),DB->timestamps.end(),timestamps[image_num]);
+        if(it != DB->timestamps.end()){
             traj_file <<    timestamps[image_num] << " " << Pose(0, 3) << " " << Pose(1, 3) << " " << Pose(2, 3) << " " <<
                         q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
-            file << timestamps[image_num] <<  " " << PnPInlierRatio << std::endl;
+            file << timestamps[image_num] <<  " " << PnPInlierRatio << " " << InlierNum << std::endl;
         }
-
-
-     
-
-        // Storage pose and inlier ratio
-
 
         image_num++;
     
     }
+    
+    finish = clock();
+    duration = (double)(finish - start) / CLOCKS_PER_SEC;
+    file << " Total VPS time is  : " << duration << " sec" << std::endl;
+    std::cout << " Total VPS time is  : " << duration << " sec" << std::endl;
+
     traj_file.close();
     file.close();
     std::cout << " Finish VPS test " << std::endl;
     return 0;
 }
+
+     
+
+

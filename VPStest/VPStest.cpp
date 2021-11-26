@@ -50,17 +50,6 @@ void VPStest::SetCandidateKFid(DBoW2::QueryResults ret)
 }
 
 
-// void VPStest::SetCandidateKF3dpointDB(DataBase DB)
-// {
-//     for(int i = 0; i < CandidateKFid.size(); i++){
-//         int KFid = CandidateKFid[i];
-//         std::vector<cv::Point3f> Match3dpoint = DB.GetKF3dPoint(KFid);
-//         MatchDB3dPoints[KFid] = Match3dpoint;
-
-//     }
-// }
-
-
 
 double VPStest::PnPInlierRatio(int KFid)
 {
@@ -71,16 +60,8 @@ double VPStest::PnPInlierRatio(int KFid)
     return PnPInlierRatio;
 }
 
-// void VPStest::DescriptorMatch(DataBase DB, cv::Mat QDescriptor)
-// {
-//     for(int i = 0; i < CandidateKFid.size(); i ++){
-//         int KFid = CandidateKFid[i];
-//         cv::Mat Descriptor = DB.GetKFMatDescriptor(KFid);
-//         // std::vector
-//     }
-// }
 
-int VPStest::FindReferenceKF(DataBase DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints)
+int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints)
 {
     std::map<int, std::vector<cv::DMatch>> MatchResults;
     std::vector<double> PnPinlierRatios;
@@ -91,10 +72,10 @@ int VPStest::FindReferenceKF(DataBase DB, cv::Mat QDescriptor, std::vector<cv::K
     for(int i = 0; i < CandidateKFid.size(); i ++){
         
         int KFid = CandidateKFid[i];
-        cv::Mat Descriptor = DB.GetKFMatDescriptor(KFid);
+        cv::Mat Descriptor = DB->GetKFMatDescriptor(KFid);
         MatchResults[KFid].resize(CandidateKFid.size());
         MatchResults[KFid] = ORBDescriptorMatch(QDescriptor, Descriptor);
-        std::vector<cv::Point3f> DisOrderMatch3dpoint = DB.GetKF3dPoint(KFid);
+        std::vector<cv::Point3f> DisOrderMatch3dpoint = DB->GetKF3dPoint(KFid);
         
         std::sort(MatchResults[KFid].begin(), MatchResults[KFid].end());
         std::vector<cv::DMatch> Goodmatches(MatchResults[KFid].begin(), MatchResults[KFid].begin() + DisOrderMatch3dpoint.size()); 
@@ -116,7 +97,6 @@ int VPStest::FindReferenceKF(DataBase DB, cv::Mat QDescriptor, std::vector<cv::K
 
     std::vector<double> PnPinlierRatios_(PnPinlierRatios);
     std::sort(PnPinlierRatios.begin(), PnPinlierRatios.end());
-std::cout << std::endl;
     auto it = find(PnPinlierRatios_.begin(), PnPinlierRatios_.end(), PnPinlierRatios.back());
     int index = it - PnPinlierRatios_.begin();
 
@@ -126,20 +106,39 @@ std::cout << std::endl;
 
 }
 
-double VPStest::VPStestToReferenceKF(DataBase DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, int KFid, Eigen::Matrix4f &Pose)
+double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, int KFid, Eigen::Matrix4f &Pose, int &inlier_num)
 {
     std::vector<cv::DMatch> Matches;
     std::vector<cv::Point3f> Match3dpts;
     std::vector<cv::Point2f> Match2dpts; 
+    int NearSearchNum = 2;
+    float Disthres = 40.0;
+
+    // cv::Mat Descriptor = DB->GetKFMatDescriptor(KFid);
+    cv::Mat Descriptor = DB->GetNearReferenceKFMatDescriptor(KFid, NearSearchNum);
     
-    cv::Mat Descriptor = DB.GetKFMatDescriptor(KFid);
     Matches = ORBDescriptorMatch(QDescriptor, Descriptor);
-    std::vector<cv::Point3f> DisOrderMatch3dpoint = DB.GetKF3dPoint(KFid);
+    
+    // std::vector<cv::Point3f> DisOrderMatch3dpoint = DB->GetKF3dPoint(KFid);
+    std::vector<cv::Point3f> DisOrderMatch3dpoint = DB->GetNearReferenceKF3dPoint(KFid, NearSearchNum);
+    
     std::sort(Matches.begin(), Matches.end());
     std::vector<cv::DMatch> GoodMatches(Matches.begin(), Matches.begin() + DisOrderMatch3dpoint.size());
+    
+    std::cout << " match size : " << GoodMatches.size() << std::endl;
+    int k = GoodMatches.size();
+    int index = 0;
+    for(int i = 0; i < k; i++){
+        float distance = GoodMatches[i].distance;
+        if(distance > Disthres){
+            GoodMatches.erase(GoodMatches.begin() + i - index);
+            index++;
+        }
+    }
 
+    std::cout << " After erase match size : " << GoodMatches.size() << std::endl;
     for(int i = 0; i < GoodMatches.size(); i++){
-
+        std::cout << GoodMatches[i].distance << " ";
         cv::Point3f Match3dPoint(   DisOrderMatch3dpoint[GoodMatches[i].trainIdx].x,
                                     DisOrderMatch3dpoint[GoodMatches[i].trainIdx].y,
                                     DisOrderMatch3dpoint[GoodMatches[i].trainIdx].z );
@@ -151,17 +150,18 @@ double VPStest::VPStestToReferenceKF(DataBase DB, cv::Mat QDescriptor, std::vect
 
     }
 
+    std::cout << std::endl;
+
     cv::Mat R, T, RT, inliers;
     cv::solvePnPRansac(Match3dpts, Match2dpts, K, cv::noArray(), R, T, true, 100, 3.0F, 0.99, inliers, 0 );
+    inlier_num = inliers.rows;
     double PnPInlierRatio = (double)inliers.rows / (double)Match3dpts.size();
     cv::Rodrigues(R, R);
-    std::cout << R << std::endl;
-    std::cout << T << std::endl;
     Pose << R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), T.at<double>(0, 0),
             R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), T.at<double>(1, 0),
             R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), T.at<double>(2, 0),
             0, 0, 0, 1;
-    // std::cout << Pose.inverse() << std::endl;
+    
     Pose = Pose.inverse();
     return PnPInlierRatio;
 

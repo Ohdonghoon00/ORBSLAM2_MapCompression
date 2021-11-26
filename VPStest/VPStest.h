@@ -31,24 +31,18 @@ public:
     std::vector<int> CandidateKFid;
 
     void SetCandidateKFid(DBoW2::QueryResults ret);
-    // void SetCandidateKF3dpointDB(DataBase DB);
 
-    // void DescriptorMatch(DataBase DB, cv::Mat QDescriptor);
-    int FindReferenceKF(DataBase DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints);
+    int FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints);
     double PnPInlierRatio(int KFid);
-    double VPStestToReferenceKF(DataBase DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypointsint, int KFid, Eigen::Matrix4f &Pose);
+    double VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypointsint, int KFid, Eigen::Matrix4f &Pose, int &inlier_num);
 
     cv::Mat InputQueryImg(std::string QueryFile);
     std::vector<cv::KeyPoint> ORBFeatureExtract(cv::Mat img);
     cv::Mat ORBDescriptor(cv::Mat img, std::vector<cv::KeyPoint> keypoints);
     std::vector<cv::DMatch> ORBDescriptorMatch(cv::Mat trainDescriptor, cv::Mat queryDescriptor);
 
-    // Converter
-    // cv::Mat VectorMatToMat(std::vector<cv::Mat> Descriptor);
-    // std::vector<cv::Mat> MatToVectorMat(cv::Mat Descriptor);
-
-    // std::vector<cv::Point3f> Sort3dpointByMatch(std::vector<cv::Point3f> Disorder3dpoint, std::vector<cv::DMatch> matches);
-
 
 };
+
+
 

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include "BoostArchiver.h"
 
 
@@ -33,8 +34,14 @@ public:
     
     cv::Mat GetKFMatDescriptor(int idx);
     std::vector<cv::Point3f> GetKF3dPoint(int idx);
+    cv::Mat GetNearReferenceKFMatDescriptor(int rkidx, int nearRkN);
+    std::vector<cv::Point3f> GetNearReferenceKF3dPoint(int rkidx, int nearRkN);
+
+
 
 
 
 };
+
+
 
