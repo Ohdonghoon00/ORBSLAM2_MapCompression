@@ -66,4 +66,4 @@ VPStest/Thirdparty/g2o/build/
 VPStest/Thirdparty/g2o/config.h
 VPStest/Thirdparty/g2o/lib/
 VPStest/Vocabulary/ORBvoc.txt
-VPStest/*.bin
+VPStest/DataBase/
