@@ -27,8 +27,7 @@ int main(int argc, char **argv)
 {
 
     DataBase* DB;
-    clock_t start, finish;
-    double duration;
+    double duration(0.0), duration_(0.0);
     int image_num = 0;
 
 
@@ -84,17 +83,19 @@ int main(int argc, char **argv)
 
     // Save PnPinlier result
     ofstream file;
-    file.open("Kitti00_VPStest_original_PnP_Result");
+    file.open("Kitti00_VPStest_50%_PnP_Result.txt");
 
     // Save trajectory result
     ofstream traj_file;
-    traj_file.open("Kitti00_VPStest_original_Pose_result");
+    traj_file.open("Kitti00_VPStest_50%_Pose_result.txt");
 
-    start = clock();
+    time_t start = time(NULL);
+    
     ///////// VPS TEST //////////
     while(true)
     {
         
+     
         cv::Mat QueryImg;
         video >> QueryImg;
         if(QueryImg.empty()) {
@@ -141,17 +142,21 @@ int main(int argc, char **argv)
         // Save timestamp + trajectory
         auto it = find(DB->timestamps.begin(),DB->timestamps.end(),timestamps[image_num]);
         if(it != DB->timestamps.end()){
-            traj_file <<    timestamps[image_num] << " " << Pose(0, 3) << " " << Pose(1, 3) << " " << Pose(2, 3) << " " <<
-                        q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
-            file << timestamps[image_num] <<  " " << PnPInlierRatio << " " << InlierNum << std::endl;
+            // if(InlierNum > 250 && PnPInlierRatio > 0.6){
+                traj_file <<    timestamps[image_num] << " " << Pose(0, 3) << " " << Pose(1, 3) << " " << Pose(2, 3) << " " <<
+                            q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
+                file << timestamps[image_num] <<  " " << PnPInlierRatio << " " << InlierNum << std::endl;
+
+            // }
         }
 
         image_num++;
-    
+        std::cout << std::endl;
+
     }
+    time_t finish = time(NULL);
+    duration = (double)(finish - start);
     
-    finish = clock();
-    duration = (double)(finish - start) / CLOCKS_PER_SEC;
     file << " Total VPS time is  : " << duration << " sec" << std::endl;
     std::cout << " Total VPS time is  : " << duration << " sec" << std::endl;
 

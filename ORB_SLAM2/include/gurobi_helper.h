@@ -14,4 +14,4 @@ void SetObjectiveILP(std::vector<GRBVar> x_, Eigen::Matrix<double, Eigen::Dynami
 
 Eigen::MatrixXd CalculateVisibilityMatrix(ORB_SLAM2::Map* map_data);
 
-void AddConstraint(ORB_SLAM2::Map* map_data, GRBModel& model_, Eigen::MatrixXd A, std::vector<GRBVar> x);
+void AddConstraint(ORB_SLAM2::Map* map_data, GRBModel& model_, Eigen::MatrixXd A, std::vector<GRBVar> x, double CompressionRatio);

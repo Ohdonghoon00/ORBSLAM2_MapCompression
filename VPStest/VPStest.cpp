@@ -112,7 +112,7 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
     std::vector<cv::Point3f> Match3dpts;
     std::vector<cv::Point2f> Match2dpts; 
     int NearSearchNum = 2;
-    float Disthres = 40.0;
+    float Disthres = 50.0;
 
     // cv::Mat Descriptor = DB->GetKFMatDescriptor(KFid);
     cv::Mat Descriptor = DB->GetNearReferenceKFMatDescriptor(KFid, NearSearchNum);
@@ -138,7 +138,7 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
 
     std::cout << " After erase match size : " << GoodMatches.size() << std::endl;
     for(int i = 0; i < GoodMatches.size(); i++){
-        std::cout << GoodMatches[i].distance << " ";
+        // std::cout << GoodMatches[i].distance << " ";
         cv::Point3f Match3dPoint(   DisOrderMatch3dpoint[GoodMatches[i].trainIdx].x,
                                     DisOrderMatch3dpoint[GoodMatches[i].trainIdx].y,
                                     DisOrderMatch3dpoint[GoodMatches[i].trainIdx].z );
@@ -150,7 +150,6 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
 
     }
 
-    std::cout << std::endl;
 
     cv::Mat R, T, RT, inliers;
     cv::solvePnPRansac(Match3dpts, Match2dpts, K, cv::noArray(), R, T, true, 100, 3.0F, 0.99, inliers, 0 );

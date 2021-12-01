@@ -63,13 +63,13 @@ Eigen::MatrixXd CalculateVisibilityMatrix(ORB_SLAM2::Map* map_data)
     return A;
 }
 
-void AddConstraint(ORB_SLAM2::Map* map_data, GRBModel& model_, Eigen::MatrixXd A, std::vector<GRBVar> x)
+void AddConstraint(ORB_SLAM2::Map* map_data, GRBModel& model_, Eigen::MatrixXd A, std::vector<GRBVar> x, double CompressionRatio)
 {
     GRBLinExpr MinKeyframePointNum = 0;
     GRBLinExpr TotalPointNum = 0;
 
     double b = 30.0; // Minimum point num by one Keyframe
-    double CompressionRatio = 0.3; // Compression Ratio to Landmarks
+    // double CompressionRatio = 0.7; // Compression Ratio to Landmarks
 
     double totalNum = (double)(int)(map_data->MapPointsInMap() * CompressionRatio);
     // double totalNum = 4000.0;

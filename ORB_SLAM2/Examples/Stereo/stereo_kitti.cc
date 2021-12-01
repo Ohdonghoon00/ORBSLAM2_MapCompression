@@ -137,15 +137,23 @@ int main(int argc, char **argv)
     // Save camera trajectory
     SLAM.SaveTrajectoryKITTI("CameraTrajectory.txt");
 
+    // Save in Original Database.h
+    SLAM.SaveDataBase("Kitti00_DB_original.bin");
     
     // Map Compression
-    // SLAM.MapCompression();
+    SLAM.MapCompression(0.7);
 
-    // Save in Database.h
-    SLAM.SaveDataBase("Kitti00_DB_original.bin");
+    // Save in Compressed Database.h
+    SLAM.SaveDataBase("Kitti00_DB_70%.bin");
+
+    // Map Compression
+    SLAM.MapCompression(0.7);
+
+    // Save in Compressed Database.h
+    SLAM.SaveDataBase("Kitti00_DB_50%.bin");
 
     // Save Timestamp + Trajectory result to # time tx ty tz qx qy qz qw
-    SLAM.SavePose("Kitti00_DB_original_result.txt");
+    SLAM.SavePose("Kitti00_DB_Trajectory_result.txt");
 
    
 

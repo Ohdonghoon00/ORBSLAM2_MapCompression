@@ -44,12 +44,12 @@ target_link_libraries(Lib
 )
 target_link_libraries(VPStest Lib)
 
-add_executable(SaveData
-SaveData.cpp
+add_executable(Evaluation
+Evaluation.cpp
 
 )
 
-target_link_libraries(SaveData Lib)
+target_link_libraries(Evaluation Lib)
 
 
 

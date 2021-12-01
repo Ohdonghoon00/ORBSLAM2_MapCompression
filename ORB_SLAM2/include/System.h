@@ -127,7 +127,7 @@ public:
     std::vector<MapPoint*> GetTrackedMapPoints();
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
-    void MapCompression();
+    void MapCompression(double CompressionRatio);
     void SaveDataBase(std::string filepath);
     void SavePose(std::string filepath);
 

@@ -495,7 +495,7 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
     return mTrackedKeyPointsUn;
 }
 
-void System::MapCompression()
+void System::MapCompression(double CompressionRatio)
 {
     // Map Compression
 std::cout << "Map Compression ... " << std::endl;
@@ -516,7 +516,7 @@ std::cout << " Set Objective ... " << std:: endl;
 std::cout << " Add Constraint ... " << std:: endl;    
     // Add Constraint
     Eigen::MatrixXd A =CalculateVisibilityMatrix(mpMap);
-    AddConstraint(mpMap, model, A, x);
+    AddConstraint(mpMap, model, A, x, CompressionRatio);
 
     std::cout << std::endl;
 
@@ -542,6 +542,11 @@ std::cout << " Finish Map Compression" << std::endl;
 
 void System::SaveDataBase(std::string filepath)
 {
+    DB->Descriptors.clear();
+    DB->KFtoMPIdx.clear();
+    DB->Landmarks.clear();
+    DB->timestamps.clear();
+
     // DataBase.h
     std::cout << " Save DataBase " << std::endl;
     std::vector<ORB_SLAM2::KeyFrame*> AllKFptr = mpMap->GetAllKeyFrames();
@@ -558,6 +563,8 @@ void System::SaveDataBase(std::string filepath)
         DB->Descriptors.push_back(AllMpptr[i]->GetDescriptor());
     }
 
+    std::sort(AllKFptr.begin(), AllKFptr.end(), ORB_SLAM2::KeyFrame::lId);
+    
     // Storage KF info
     for(size_t i = 0; i < AllKFptr.size(); i++){
         for(size_t j = 0; j < AllMpptr.size(); j++){
@@ -567,7 +574,6 @@ void System::SaveDataBase(std::string filepath)
 
     }
     
-    std::sort(AllKFptr.begin(), AllKFptr.end(), ORB_SLAM2::KeyFrame::lId);
     for(size_t i = 0; i < AllKFptr.size(); i++){    
         DB->timestamps.push_back(AllKFptr[i]->mTimeStamp);
     }
@@ -591,6 +597,8 @@ void System::SavePose(std::string filepath)
     ofstream file;
     std::vector<ORB_SLAM2::KeyFrame*> AllKFptr = mpMap->GetAllKeyFrames();
     
+    std::sort(AllKFptr.begin(), AllKFptr.end(), ORB_SLAM2::KeyFrame::lId);
+
     file.open(filepath);
     for(size_t i = 0; i < AllKFptr.size(); i++){
 
