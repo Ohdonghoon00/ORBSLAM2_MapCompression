@@ -25,7 +25,8 @@ endif()
 
 add_library(Lib SHARED
 VPStest.cpp
-DataBase.cpp )
+DataBase.cpp
+ORBextractor.cc )
 
 target_link_libraries(Lib
   

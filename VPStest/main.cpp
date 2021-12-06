@@ -4,6 +4,7 @@
 #include "ORBVocabulary.h"
 #include "Parameter.h"
 #include "Converter.h"
+#include "ORBextractor.h"
 
 #include <opencv2/core.hpp>
 #include "opencv2/opencv.hpp"
@@ -26,6 +27,13 @@ using namespace DBoW2;
 int main(int argc, char **argv)
 {
 
+   
+    int nFeatures = 4000;
+    float scaleFactor = 1.2;
+    int nlevels = 8;
+    int iniThFAST = 20;
+    int minThFAST = 7;
+    
     DataBase* DB;
     double duration(0.0), duration_(0.0);
     int image_num = 0;
@@ -83,11 +91,11 @@ int main(int argc, char **argv)
 
     // Save PnPinlier result
     ofstream file;
-    file.open("Kitti00_VPStest_50%_PnP_Result.txt");
+    file.open("Kitti00_VPStest_original_PnP_Result.txt");
 
     // Save trajectory result
     ofstream traj_file;
-    traj_file.open("Kitti00_VPStest_50%_Pose_result.txt");
+    traj_file.open("Kitti00_VPStest_original_Pose_result.txt");
 
     time_t start = time(NULL);
     
@@ -95,7 +103,8 @@ int main(int argc, char **argv)
     while(true)
     {
         
-     
+        ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
+
         cv::Mat QueryImg;
         video >> QueryImg;
         if(QueryImg.empty()) {
@@ -106,12 +115,22 @@ int main(int argc, char **argv)
         std::cout << " Image Num is  :  " << image_num << "      !!!!!!!!!!!!!!!!!!!!" << std::endl;
         VPStest VPStest;
 
-        // Extract ORB Feature and Destriptor
-        std::cout << " Extract ORB Feature and Descriptor " << std::endl;
+
+        cv::Mat mask, QDescriptors;
         std::vector<cv::KeyPoint> QKeypoints;
-        cv::Mat QDescriptors;
-        QKeypoints = VPStest.ORBFeatureExtract(QueryImg);
-        QDescriptors = VPStest.ORBDescriptor(QueryImg, QKeypoints);
+        ORBfeatureAndDescriptor(QueryImg, mask, QKeypoints, QDescriptors);
+        std::cout << QDescriptors.size() << std::endl;
+        // for(int i = 0; i < QKeypoints.size(); i++) std::cout << QKeypoints[i].pt << std::endl;
+        // cv::Mat image;
+        // cv::drawKeypoints(QueryImg, QKeypoints, image);
+        // cv::imshow("image", image);
+        // cv::waitKey();
+        // Extract ORB Feature and Destriptor
+        // std::cout << " Extract ORB Feature and Descriptor " << std::endl;
+        // std::vector<cv::KeyPoint> QKeypoints;
+        // cv::Mat QDescriptors;
+        // QKeypoints = VPStest.ORBFeatureExtract(QueryImg);
+        // QDescriptors = VPStest.ORBDescriptor(QueryImg, QKeypoints);
 
         // Place Recognition
         QueryResults ret;
@@ -119,7 +138,7 @@ int main(int argc, char **argv)
 
         std::vector<cv::Mat> VQDescriptors = MatToVectorMat(QDescriptors);
         db.query(VQDescriptors, ret, 20);
-        // std::cout << ret << std::endl;
+        std::cout << ret << std::endl;
         std::cout << "High score keyframe  num : "  << ret[0].Id << std::endl;
         // "       Score : " << ret[0].Score << std::endl;
         VPStest.SetCandidateKFid(ret);
