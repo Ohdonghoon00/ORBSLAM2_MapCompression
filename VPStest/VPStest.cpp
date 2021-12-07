@@ -165,3 +165,15 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
     return PnPInlierRatio;
 
 }
+
+int VPStest::FindKFImageNum(int KFid, DataBase* DB, std::vector<double> timestamps)
+{
+    double DBtimestamp = DB->timestamps[KFid];
+    auto it = find(timestamps.begin(), timestamps.end(), DBtimestamp);
+    int index = 0;
+    if(it != timestamps.end()){
+        index = it - timestamps.begin();
+    }
+
+    return index;
+}

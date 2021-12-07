@@ -40,7 +40,7 @@ public:
     std::vector<cv::KeyPoint> ORBFeatureExtract(cv::Mat img);
     cv::Mat ORBDescriptor(cv::Mat img, std::vector<cv::KeyPoint> keypoints);
     std::vector<cv::DMatch> ORBDescriptorMatch(cv::Mat trainDescriptor, cv::Mat queryDescriptor);
-
+    int FindKFImageNum(int KFid, DataBase* DB, std::vector<double> timestamps);
 
 };
 

@@ -148,6 +148,10 @@ int main(int argc, char **argv)
         std::cout << "Find Reference Keyframe !! " << std::endl;
         int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints);
         std::cout << " Selected Keyframe num : " << ReferenceKFId << std::endl;
+        
+        // For Draw image 
+        int KF_imageNum = VPStest.FindKFImageNum(ReferenceKFId, DB, timestamps);
+        std::cout << "KF image Num :  " << KF_imageNum << std::endl;
 
         // VPS test to ReferenceKF
         Eigen::Matrix4f Pose;
