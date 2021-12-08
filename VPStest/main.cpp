@@ -27,12 +27,13 @@ using namespace DBoW2;
 int main(int argc, char **argv)
 {
 
-   
-    int nFeatures = 4000;
+    int nFeatures = 2000;
     float scaleFactor = 1.2;
     int nlevels = 8;
     int iniThFAST = 20;
     int minThFAST = 7;
+    VPStest VPStest(4000);
+    ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
     
     DataBase* DB;
     double duration(0.0), duration_(0.0);
@@ -49,33 +50,14 @@ int main(int argc, char **argv)
     ia >> DB;
     in.close();
 
-    
     // Load voc
     std::cout << "load voc" << std::endl;
+    // ORBVocabulary voc(argv[2]);
     ORBVocabulary voc;
     voc.loadFromTextFile(argv[2]);
     std::cout << "copy voc to db" << std::endl;
     OrbDatabase db(voc, false, 0); // false = do not use direct index
-
-    // Input DB descriptor to voc
-    for(size_t i = 0; i < DB->KFtoMPIdx.size(); i++){
-        std::vector<cv::Mat> KFDescriptor;
-        KFDescriptor.clear();
-        KFDescriptor = MatToVectorMat(DB->GetKFMatDescriptor(i));
-        std::cout << " KF num : " << i << "     Keypoint num : " << (DB->GetKFMatDescriptor(i)).size() << std::endl;  
-        db.add(KFDescriptor);
-    }
-
     std::string DataPath = argv[3];
-    
-    // Load Query Img
-    std::cout << " Input Query Img " << std::endl;
-    std::string QueryPath = DataPath + "/image_1/%06d.png";
-    cv::VideoCapture video;
-    if(!video.open(QueryPath)){
-        std::cout << " No query image " << std::endl;
-        return -1;
-    }
     
     // Load timestamp
     std::string timestampPath = DataPath + "/times.txt";
@@ -88,14 +70,51 @@ int main(int argc, char **argv)
         timestamps.push_back(std::stod(line));
     
     s.close();
+    
+
+
+    // Input DB descriptor to voc
+    for(size_t i = 0; i < DB->KFtoMPIdx.size(); i++){
+        std::vector<cv::Mat> KFDescriptor;
+        KFDescriptor.clear();
+        KFDescriptor = MatToVectorMat(DB->GetKFMatDescriptor(i));
+        std::cout << " KF num : " << i << "     Keypoint num : " << (DB->GetKFMatDescriptor(i)).size() << std::endl;  
+        
+        int KF_num = VPStest.FindKFImageNum(i, DB, timestamps);
+        std::stringstream DBimagePath;  
+        DBimagePath << DataPath + "/image_0/" << std::setfill('0') << std::setw(6) << KF_num << ".png";
+        cv::Mat DB_image = cv::imread(DBimagePath.str(), cv::ImreadModes::IMREAD_GRAYSCALE);
+        
+        cv::Mat mask_, QDescriptors_;
+        std::vector<cv::KeyPoint> QKeypoints_;
+        ORBfeatureAndDescriptor(DB_image, mask_, QKeypoints_, QDescriptors_);        
+        std::vector<cv::Mat> DBDescriptors = MatToVectorMat(QDescriptors_);
+        db.add(DBDescriptors);
+    }
+
+    std::cout << db << std::endl;
+    
+    // Load Query Img
+    std::cout << " Input Query Img " << std::endl;
+    std::string QueryPath = DataPath + "/image_1/%06d.png";
+    cv::VideoCapture video;
+    if(!video.open(QueryPath)){
+        std::cout << " No query image " << std::endl;
+        return -1;
+    }
+    
 
     // Save PnPinlier result
     ofstream file;
-    file.open("Kitti00_VPStest_original_PnP_Result.txt");
+    file.open("Kitti06_VPStest_original_PnP_Result.txt");
 
     // Save trajectory result
     ofstream traj_file;
-    traj_file.open("Kitti00_VPStest_original_Pose_result.txt");
+    traj_file.open("Kitti06_VPStest_original_Pose_result.txt");
+
+    // test file result
+    ofstream test_file;
+    test_file.open("Kitti06_test_original_Result.txt");
 
     time_t start = time(NULL);
     
@@ -103,7 +122,7 @@ int main(int argc, char **argv)
     while(true)
     {
         
-        ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
+        
 
         cv::Mat QueryImg;
         video >> QueryImg;
@@ -113,13 +132,12 @@ int main(int argc, char **argv)
         }
         if (QueryImg.channels() > 1) cv::cvtColor(QueryImg, QueryImg, cv::COLOR_RGB2GRAY);
         std::cout << " Image Num is  :  " << image_num << "      !!!!!!!!!!!!!!!!!!!!" << std::endl;
-        VPStest VPStest;
 
 
         cv::Mat mask, QDescriptors;
         std::vector<cv::KeyPoint> QKeypoints;
         ORBfeatureAndDescriptor(QueryImg, mask, QKeypoints, QDescriptors);
-        std::cout << QDescriptors.size() << std::endl;
+        // std::cout << QDescriptors.size() << std::endl;
         // for(int i = 0; i < QKeypoints.size(); i++) std::cout << QKeypoints[i].pt << std::endl;
         // cv::Mat image;
         // cv::drawKeypoints(QueryImg, QKeypoints, image);
@@ -140,18 +158,21 @@ int main(int argc, char **argv)
         db.query(VQDescriptors, ret, 20);
         std::cout << ret << std::endl;
         std::cout << "High score keyframe  num : "  << ret[0].Id << std::endl;
-        // "       Score : " << ret[0].Score << std::endl;
-        VPStest.SetCandidateKFid(ret);
+        // "       word num : " << ret[0].nWords << std::endl;
+        // VPStest.SetCandidateKFid(ret);
 
-        
+        int DBoW2Result_KF_imageNum = VPStest.FindKFImageNum((int)ret[0].Id, DB, timestamps);
+        std::cout << "DBoW2Result KF image Num :  " << DBoW2Result_KF_imageNum << std::endl;        
+
         // FindReferenceKF
         std::cout << "Find Reference Keyframe !! " << std::endl;
-        int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints);
+        // int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints);
+        int ReferenceKFId = ret[0].Id;
         std::cout << " Selected Keyframe num : " << ReferenceKFId << std::endl;
         
         // For Draw image 
-        int KF_imageNum = VPStest.FindKFImageNum(ReferenceKFId, DB, timestamps);
-        std::cout << "KF image Num :  " << KF_imageNum << std::endl;
+        int Selected_KF_imageNum = VPStest.FindKFImageNum(ReferenceKFId, DB, timestamps);
+        std::cout << "Selecte KF image Num :  " << Selected_KF_imageNum << std::endl;
 
         // VPS test to ReferenceKF
         Eigen::Matrix4f Pose;
@@ -165,14 +186,18 @@ int main(int argc, char **argv)
         // Save timestamp + trajectory
         auto it = find(DB->timestamps.begin(),DB->timestamps.end(),timestamps[image_num]);
         if(it != DB->timestamps.end()){
+            std::cout << ret << std::endl;
+
             // if(InlierNum > 250 && PnPInlierRatio > 0.6){
                 traj_file <<    timestamps[image_num] << " " << Pose(0, 3) << " " << Pose(1, 3) << " " << Pose(2, 3) << " " <<
                             q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
                 file << timestamps[image_num] <<  " " << PnPInlierRatio << " " << InlierNum << std::endl;
 
-            // }
-        }
-
+            }
+        test_file << timestamps[image_num] << " " << image_num << " " << DBoW2Result_KF_imageNum << " " << Selected_KF_imageNum << " " << ret[0].Id << " " << ReferenceKFId << std::endl;
+        // }
+        // Query imageNum, DB DBoW2 result imageNum, DB Selected result imagenum, DBoW2 KF result, selected KF result
+        // if(image_num == 500) break;
         image_num++;
         std::cout << std::endl;
 
@@ -185,6 +210,7 @@ int main(int argc, char **argv)
 
     traj_file.close();
     file.close();
+    test_file.close();
     std::cout << " Finish VPS test " << std::endl;
     return 0;
 }

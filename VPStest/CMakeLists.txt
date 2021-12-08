@@ -52,7 +52,12 @@ Evaluation.cpp
 
 target_link_libraries(Evaluation Lib)
 
+add_executable(dbow2test
+dbow2test.cpp
 
+)
+
+target_link_libraries(dbow2test Lib)
 
 
 

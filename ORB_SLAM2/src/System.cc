@@ -573,7 +573,6 @@ void System::SaveDataBase(std::string filepath)
         }
 
     }
-    
     for(size_t i = 0; i < AllKFptr.size(); i++){    
         DB->timestamps.push_back(AllKFptr[i]->mTimeStamp);
     }

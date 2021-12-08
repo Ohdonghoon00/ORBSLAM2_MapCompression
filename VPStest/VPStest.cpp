@@ -54,6 +54,7 @@ void VPStest::SetCandidateKFid(DBoW2::QueryResults ret)
 double VPStest::PnPInlierRatio(int KFid)
 {
     cv::Mat R, T, RT, inliers;
+    // std::cout << MatchDB3dPoints[KFid].size() << "  " << MatchQ2dPoints[KFid].size() << std::endl;
     cv::solvePnPRansac(MatchDB3dPoints[KFid], MatchQ2dPoints[KFid], K, cv::noArray(), R, T, true, 100, 3.0F, 0.99, inliers, 0 );
     double PnPInlierRatio = (double)inliers.rows / (double)MatchDB3dPoints[KFid].size();
 
@@ -73,12 +74,13 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
         
         int KFid = CandidateKFid[i];
         cv::Mat Descriptor = DB->GetKFMatDescriptor(KFid);
-        MatchResults[KFid].resize(CandidateKFid.size());
+        // MatchResults[KFid].resize(CandidateKFid.size());
         MatchResults[KFid] = ORBDescriptorMatch(QDescriptor, Descriptor);
         std::vector<cv::Point3f> DisOrderMatch3dpoint = DB->GetKF3dPoint(KFid);
-        
+        int GoodMatchNum = DisOrderMatch3dpoint.size();
+        if(DisOrderMatch3dpoint.size() > QDescriptor.rows) GoodMatchNum = QDescriptor.rows;
         std::sort(MatchResults[KFid].begin(), MatchResults[KFid].end());
-        std::vector<cv::DMatch> Goodmatches(MatchResults[KFid].begin(), MatchResults[KFid].begin() + DisOrderMatch3dpoint.size()); 
+        std::vector<cv::DMatch> Goodmatches(MatchResults[KFid].begin(), MatchResults[KFid].begin() + GoodMatchNum); 
 
         for(int j = 0; j < Goodmatches.size(); j++){
             cv::Point3f Match3dPoint(   DisOrderMatch3dpoint[Goodmatches[j].trainIdx].x,
@@ -111,19 +113,21 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
     std::vector<cv::DMatch> Matches;
     std::vector<cv::Point3f> Match3dpts;
     std::vector<cv::Point2f> Match2dpts; 
-    int NearSearchNum = 2;
-    float Disthres = 50.0;
+    int NearSearchNum = 0;
+    float Disthres = 100.0;
 
-    // cv::Mat Descriptor = DB->GetKFMatDescriptor(KFid);
-    cv::Mat Descriptor = DB->GetNearReferenceKFMatDescriptor(KFid, NearSearchNum);
+    cv::Mat Descriptor = DB->GetKFMatDescriptor(KFid);
+    // cv::Mat Descriptor = DB->GetNearReferenceKFMatDescriptor(KFid, NearSearchNum);
     
     Matches = ORBDescriptorMatch(QDescriptor, Descriptor);
     
-    // std::vector<cv::Point3f> DisOrderMatch3dpoint = DB->GetKF3dPoint(KFid);
-    std::vector<cv::Point3f> DisOrderMatch3dpoint = DB->GetNearReferenceKF3dPoint(KFid, NearSearchNum);
+    std::vector<cv::Point3f> DisOrderMatch3dpoint = DB->GetKF3dPoint(KFid);
+    // std::vector<cv::Point3f> DisOrderMatch3dpoint = DB->GetNearReferenceKF3dPoint(KFid, NearSearchNum);
+    int GoodMatchNum = DisOrderMatch3dpoint.size();
+    if(DisOrderMatch3dpoint.size() > QDescriptor.rows) GoodMatchNum = QDescriptor.rows;
     
     std::sort(Matches.begin(), Matches.end());
-    std::vector<cv::DMatch> GoodMatches(Matches.begin(), Matches.begin() + DisOrderMatch3dpoint.size());
+    std::vector<cv::DMatch> GoodMatches(Matches.begin(), Matches.begin() + GoodMatchNum);
     
     std::cout << " match size : " << GoodMatches.size() << std::endl;
     int k = GoodMatches.size();

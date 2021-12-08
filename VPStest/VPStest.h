@@ -22,10 +22,13 @@ class VPStest
 {
 public:
     
-    VPStest()
+    VPStest(int num):
+        FeatureNum(num)
     {}
 
-    cv::Ptr<cv::ORB> orb = cv::ORB::create(4000);
+    int FeatureNum;
+
+    cv::Ptr<cv::ORB> orb = cv::ORB::create(FeatureNum);
     std::map<int, std::vector<cv::Point3f>> MatchDB3dPoints;
     std::map<int, std::vector<cv::Point2f>> MatchQ2dPoints;
     std::vector<int> CandidateKFid;
