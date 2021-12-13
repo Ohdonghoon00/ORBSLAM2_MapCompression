@@ -181,13 +181,12 @@ int main(int argc, char **argv)
         std::cout << " PnPInlier Ratio of Selected Keyframe : " << PnPInlierRatio << std::endl;
         Eigen::Quaternionf q = ToQuaternion(Pose);
 
-        std::cout << Pose << std::endl;
+        
         
         // Save timestamp + trajectory
         auto it = find(DB->timestamps.begin(),DB->timestamps.end(),timestamps[image_num]);
         if(it != DB->timestamps.end()){
-            std::cout << ret << std::endl;
-
+            std::cout << " Same As DataBase timestamp !!!  " << std::endl;            
             // if(InlierNum > 250 && PnPInlierRatio > 0.6){
                 traj_file <<    timestamps[image_num] << " " << Pose(0, 3) << " " << Pose(1, 3) << " " << Pose(2, 3) << " " <<
                             q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
@@ -198,6 +197,19 @@ int main(int argc, char **argv)
         // }
         // Query imageNum, DB DBoW2 result imageNum, DB Selected result imagenum, DBoW2 KF result, selected KF result
         // if(image_num == 500) break;
+        
+        // Print Result
+        std::cout << "Place Recognition Result !!!!!!!!!!!! " << std::endl;
+        std::cout << "Query image Num : " << image_num << std::endl;
+        std::cout << "DataBase image Num  : " <<  DBoW2Result_KF_imageNum << std::endl;
+        std::cout << "SolvePnPResult  !!!!!!!!!!!! " << std::endl;
+        std::cout << Pose << std::endl;
+        std::cout << " SolvePnPInlier Ratio : " << PnPInlierRatio << std::endl;
+        std::cout << " Inliers num  : " << InlierNum << std::endl;
+
+
+        
+        
         image_num++;
         std::cout << std::endl;
 
