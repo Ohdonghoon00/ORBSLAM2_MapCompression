@@ -19,7 +19,7 @@
 #include <cstdio>
 #include <sstream>
 // #include <thread>
-#include <pangolin/pangolin.h>
+// #include <pangolin/pangolin.h>
 
 using namespace std;
 using namespace cv;

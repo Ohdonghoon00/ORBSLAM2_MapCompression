@@ -12,7 +12,7 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 include_directories(
   "/usr/include/eigen3"
   ${OpenCV_INCLUDE_DIRS}
-  ${Pangolin_INCLUDE_DIRS}
+  # ${Pangolin_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}
 )
 
@@ -26,17 +26,20 @@ endif()
 add_library(Lib SHARED
 VPStest.cpp
 DataBase.cpp
-ORBextractor.cc )
+ORBextractor.cc
+map_viewer.cpp )
 
 target_link_libraries(Lib
   
   ${OpenCV_LIBS}
-  ${Pangolin_LIBRARIES}
+  # ${Pangolin_LIBRARIES}
   ${BOOST_SERIALIZATION}
   ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
   #   Ceres::ceres
   #   glog
-      
+  GL
+  GLU
+  glut    
   )
 
   add_executable(VPStest
@@ -52,12 +55,12 @@ Evaluation.cpp
 
 target_link_libraries(Evaluation Lib)
 
-add_executable(dbow2test
-dbow2test.cpp
+# add_executable(dbow2test
+# dbow2test.cpp
 
-)
+# )
 
-target_link_libraries(dbow2test Lib)
+# target_link_libraries(dbow2test Lib)
 
 
 

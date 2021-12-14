@@ -5,6 +5,7 @@
 #include "Parameter.h"
 #include "Converter.h"
 #include "ORBextractor.h"
+#include "map_viewer.h"
 
 #include <opencv2/core.hpp>
 #include "opencv2/opencv.hpp"
@@ -18,7 +19,7 @@
 #include<iomanip>
 #include<chrono>
 #include <cstdio>
-#include <pangolin/pangolin.h>
+// #include <pangolin/pangolin.h>
 
 using namespace std;
 using namespace cv;

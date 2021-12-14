@@ -5,6 +5,7 @@
 #include "Parameter.h"
 #include "Converter.h"
 #include "ORBextractor.h"
+#include "map_viewer.h"
 
 #include <opencv2/core.hpp>
 #include "opencv2/opencv.hpp"
@@ -18,7 +19,7 @@
 #include<iomanip>
 #include<chrono>
 #include <cstdio>
-#include <pangolin/pangolin.h>
+// #include <pangolin/pangolin.h>
 
 using namespace std;
 using namespace cv;
@@ -26,7 +27,11 @@ using namespace DBoW2;
 
 int main(int argc, char **argv)
 {
-
+    // Viewer
+    glutInit(&argc, argv);
+    initialize_window();
+    
+    
     int nFeatures = 2000;
     float scaleFactor = 1.2;
     int nlevels = 8;
@@ -122,7 +127,7 @@ int main(int argc, char **argv)
     while(true)
     {
         
-        
+        // glClear(GL_COLOR_BUFFER_BIT);
 
         cv::Mat QueryImg;
         video >> QueryImg;
@@ -192,6 +197,21 @@ int main(int argc, char **argv)
                             q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
                 file << timestamps[image_num] <<  " " << PnPInlierRatio << " " << InlierNum << std::endl;
 
+            
+                // Draw Map point and keyframe pose
+                // Map Points
+                std::vector<cv::Point3f> LandMarks = DB->GetKF3dPoint(ReferenceKFId);
+                for(int i = 0; i < LandMarks.size(); i++){
+                    GLdouble X_map(LandMarks[i].x), Y_map(LandMarks[i].y), Z_map(LandMarks[i].z);
+                    show_trajectory(X_map, Y_map, Z_map, 0.0, 0.0, 0.0, 0.01);
+                }
+
+                // VPS Result Pose
+                show_trajectory_keyframe(Pose, 0.0, 0.0, 1.0, 0.5, 3.5);
+                glFlush();
+                cv::imshow("queryImg", QueryImg);        
+            
+            
             }
         test_file << timestamps[image_num] << " " << image_num << " " << DBoW2Result_KF_imageNum << " " << Selected_KF_imageNum << " " << ret[0].Id << " " << ReferenceKFId << std::endl;
         // }
@@ -208,7 +228,7 @@ int main(int argc, char **argv)
         std::cout << " Inliers num  : " << InlierNum << std::endl;
 
 
-        
+        // cv::waitKey();
         
         image_num++;
         std::cout << std::endl;
@@ -219,11 +239,11 @@ int main(int argc, char **argv)
     
     file << " Total VPS time is  : " << duration << " sec" << std::endl;
     std::cout << " Total VPS time is  : " << duration << " sec" << std::endl;
-
     traj_file.close();
     file.close();
     test_file.close();
     std::cout << " Finish VPS test " << std::endl;
+    cv::waitKey();
     return 0;
 }
 
