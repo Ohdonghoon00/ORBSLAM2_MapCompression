@@ -546,11 +546,13 @@ void System::SaveDataBase(std::string filepath)
     DB->KFtoMPIdx.clear();
     DB->Landmarks.clear();
     DB->timestamps.clear();
+    DB->KeyPointInMap.clear();
 
     // DataBase.h
     std::cout << " Save DataBase " << std::endl;
     std::vector<ORB_SLAM2::KeyFrame*> AllKFptr = mpMap->GetAllKeyFrames();
     std::vector<ORB_SLAM2::MapPoint*> AllMpptr = mpMap->GetAllMapPoints();
+    std::sort(AllKFptr.begin(), AllKFptr.end(), ORB_SLAM2::KeyFrame::lId);
     
     std::cout << " Keyframe num : " << AllKFptr.size() << std::endl;
     std::cout << " Landmarks num : " << AllMpptr.size() << std::endl;
@@ -563,20 +565,26 @@ void System::SaveDataBase(std::string filepath)
         DB->Descriptors.push_back(AllMpptr[i]->GetDescriptor());
     }
 
-    std::sort(AllKFptr.begin(), AllKFptr.end(), ORB_SLAM2::KeyFrame::lId);
     
     // Storage KF info
-    for(size_t i = 0; i < AllKFptr.size(); i++){
-        for(size_t j = 0; j < AllMpptr.size(); j++){
-            bool isinKF = AllMpptr[j]->IsInKeyFrame(AllKFptr[i]);
-            if(isinKF) DB->KFtoMPIdx[i].push_back(j);
+        for(size_t i = 0; i < AllMpptr.size(); i++){
+            std::map<ORB_SLAM2::KeyFrame*,size_t> Observations = AllMpptr[i]->GetObservations();
+            
+            for(std::map<ORB_SLAM2::KeyFrame*, size_t>::iterator Iter = Observations.begin(); Iter != Observations.end(); ++Iter){
+                int KFid = Iter->first->mnId;
+                DB->KFtoMPIdx[KFid].push_back(i);
+                int KeypointIdx = Iter->second;
+                cv::KeyPoint Point2d = Iter->first->mvKeys[KeypointIdx];
+                DB->KeyPointInMap[KFid].push_back(Point2d);
+            }          
+                
         }
 
-    }
+    
 
     for(size_t i = 0; i < AllKFptr.size(); i++){    
         DB->timestamps.push_back(AllKFptr[i]->mTimeStamp);
-        std::cout << AllKFptr[i]->mvKeys.size() << "  " << DB->KFtoMPIdx[i].size() << std::endl;
+        // std::cout <<  DB->KeyPointInMap[i].size() << "  " << DB->KFtoMPIdx[i].size() << std::endl;
     }
     
     // Saved DataBase to Binary file
@@ -618,6 +626,12 @@ void System::SavePose(std::string filepath)
     }
 
      file.close();     
+}
+
+void System::printMap(std::map<ORB_SLAM2::KeyFrame*,size_t> target_map)
+{
+    for(std::map<ORB_SLAM2::KeyFrame*, size_t>::iterator Iter = target_map.begin(); Iter != target_map.end(); ++Iter)
+        std::cout << Iter->first->mnId << "   " << Iter->second << std::endl;
 }
 
 } //namespace ORB_SLAM

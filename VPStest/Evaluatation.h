@@ -163,12 +163,15 @@ Eigen::VectorXf LeftCamToRightCam(Eigen::VectorXf Leftcam)
 {
     Eigen::Matrix4f BaselineMotion;
     // kitti 04-12
-    BaselineMotion <<   1, 0, 0, 0.5371506533f,
+    // BaselineMotion <<   1, 0, 0, 0.537126981164f,
+    //                     0, 1, 0, 0,
+    //                     0, 0, 1, 0,
+    //                     0, 0, 0, 1;
+    // kitti 00-02
+    BaselineMotion <<   1, 0, 0, 0.555165012698f,
                         0, 1, 0, 0,
                         0, 0, 1, 0,
                         0, 0, 0, 1;
-    // kitti 00-02
-
     
     Eigen::VectorXf Rightcam(7);
 

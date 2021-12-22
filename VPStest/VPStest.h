@@ -37,13 +37,15 @@ public:
 
     int FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints);
     double PnPInlierRatio(int KFid);
-    double VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypointsint, int KFid, Eigen::Matrix4f &Pose, int &inlier_num);
+    double VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, int KFid, Eigen::Matrix4f &Pose, cv::Mat &Inliers, std::vector<cv::DMatch> &GoodMatches_);
 
     cv::Mat InputQueryImg(std::string QueryFile);
     std::vector<cv::KeyPoint> ORBFeatureExtract(cv::Mat img);
     cv::Mat ORBDescriptor(cv::Mat img, std::vector<cv::KeyPoint> keypoints);
     std::vector<cv::DMatch> ORBDescriptorMatch(cv::Mat trainDescriptor, cv::Mat queryDescriptor);
     int FindKFImageNum(int KFid, DataBase* DB, std::vector<double> timestamps);
+    void InlierMatchResult(std::vector<cv::DMatch> &Matches, cv::Mat Inliers);
+
 
 };
 

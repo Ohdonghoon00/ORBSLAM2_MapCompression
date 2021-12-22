@@ -130,6 +130,7 @@ public:
     void MapCompression(double CompressionRatio);
     void SaveDataBase(std::string filepath);
     void SavePose(std::string filepath);
+    void printMap(std::map<ORB_SLAM2::KeyFrame*,size_t> target_map);
 
 
 

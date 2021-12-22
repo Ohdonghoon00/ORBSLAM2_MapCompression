@@ -25,6 +25,7 @@ public:
 
     // Keyframe info
     std::map< int, std::vector< int > > KFtoMPIdx; // KFid - MPidx 
+    std::map< int, std::vector< cv::KeyPoint > > KeyPointInMap;
     std::vector<double> timestamps;
 
 

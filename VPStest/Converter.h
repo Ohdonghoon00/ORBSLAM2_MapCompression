@@ -47,3 +47,19 @@ Eigen::Quaternionf ToQuaternion(Eigen::Matrix4f &pose)
 
     return q;
 }
+
+std::vector<cv::KeyPoint> Point2f2KeyPoint(std::vector<cv::Point2f> pts2f)
+{
+    std::vector<cv::KeyPoint> KeyPoints;
+    cv::KeyPoint::convert(pts2f, KeyPoints);
+
+    return KeyPoints;
+}
+
+std::vector<cv::Point2f> KeyPoint2Point2f(std::vector<cv::KeyPoint> KeyPoints)
+{
+    std::vector<cv::Point2f> pts2f;
+    cv::KeyPoint::convert(KeyPoints, pts2f);
+
+    return pts2f;
+}

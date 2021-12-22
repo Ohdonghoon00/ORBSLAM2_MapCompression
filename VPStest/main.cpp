@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     initialize_window();
     
     
-    int nFeatures = 2000;
+    int nFeatures = 4000;
     float scaleFactor = 1.2;
     int nlevels = 8;
     int iniThFAST = 20;
@@ -77,26 +77,25 @@ int main(int argc, char **argv)
     s.close();
     
 
-
+    std::vector<cv::Mat> DB_images;
     // Input DB descriptor to voc
     for(size_t i = 0; i < DB->KFtoMPIdx.size(); i++){
         std::vector<cv::Mat> KFDescriptor;
         KFDescriptor.clear();
         KFDescriptor = MatToVectorMat(DB->GetKFMatDescriptor(i));
-        std::cout << " KF num : " << i << "     Keypoint num : " << (DB->GetKFMatDescriptor(i)).size() << std::endl;  
+        std::cout << " KF num : " << i << "     Keypoint num : " << (DB->GetKFMatDescriptor(i)).size() <<  "    " << DB->KFtoMPIdx[i].size() << std::endl;  
         
         int KF_num = VPStest.FindKFImageNum(i, DB, timestamps);
         std::stringstream DBimagePath;  
         DBimagePath << DataPath + "/image_0/" << std::setfill('0') << std::setw(6) << KF_num << ".png";
         cv::Mat DB_image = cv::imread(DBimagePath.str(), cv::ImreadModes::IMREAD_GRAYSCALE);
-        
+        DB_images.push_back(DB_image);
         cv::Mat mask_, QDescriptors_;
         std::vector<cv::KeyPoint> QKeypoints_;
         ORBfeatureAndDescriptor(DB_image, mask_, QKeypoints_, QDescriptors_);        
         std::vector<cv::Mat> DBDescriptors = MatToVectorMat(QDescriptors_);
         db.add(DBDescriptors);
     }
-
     std::cout << db << std::endl;
     
     // Load Query Img
@@ -111,15 +110,15 @@ int main(int argc, char **argv)
 
     // Save PnPinlier result
     ofstream file;
-    file.open("Kitti06_VPStest_original_PnP_Result.txt");
+    file.open("Kitti00_VPStest_70%_PnP_Result.txt");
 
     // Save trajectory result
     ofstream traj_file;
-    traj_file.open("Kitti06_VPStest_original_Pose_result.txt");
+    traj_file.open("Kitti00_VPStest_70%_Pose_result.txt");
 
     // test file result
     ofstream test_file;
-    test_file.open("Kitti06_test_original_Result.txt");
+    test_file.open("Kitti00_test_70%_Result.txt");
 
     time_t start = time(NULL);
     
@@ -138,6 +137,7 @@ int main(int argc, char **argv)
         if (QueryImg.channels() > 1) cv::cvtColor(QueryImg, QueryImg, cv::COLOR_RGB2GRAY);
         std::cout << " Image Num is  :  " << image_num << "      !!!!!!!!!!!!!!!!!!!!" << std::endl;
 
+            std::cout << "Total Landmark Num : " << DB->Landmarks.size() << std::endl;
 
         cv::Mat mask, QDescriptors;
         std::vector<cv::KeyPoint> QKeypoints;
@@ -181,12 +181,13 @@ int main(int argc, char **argv)
 
         // VPS test to ReferenceKF
         Eigen::Matrix4f Pose;
-        int InlierNum;
-        double PnPInlierRatio = VPStest.VPStestToReferenceKF(DB, QDescriptors, QKeypoints, ReferenceKFId, Pose, InlierNum);
+        cv::Mat Inliers;
+        std::vector<cv::DMatch> Matches;
+        double PnPInlierRatio = VPStest.VPStestToReferenceKF(DB, QDescriptors, QKeypoints, ReferenceKFId, Pose, Inliers, Matches);
         std::cout << " PnPInlier Ratio of Selected Keyframe : " << PnPInlierRatio << std::endl;
         Eigen::Quaternionf q = ToQuaternion(Pose);
 
-        
+
         
         // Save timestamp + trajectory
         auto it = find(DB->timestamps.begin(),DB->timestamps.end(),timestamps[image_num]);
@@ -195,22 +196,10 @@ int main(int argc, char **argv)
             // if(InlierNum > 250 && PnPInlierRatio > 0.6){
                 traj_file <<    timestamps[image_num] << " " << Pose(0, 3) << " " << Pose(1, 3) << " " << Pose(2, 3) << " " <<
                             q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
-                file << timestamps[image_num] <<  " " << PnPInlierRatio << " " << InlierNum << std::endl;
+                file << timestamps[image_num] <<  " " << PnPInlierRatio << " " << Inliers.rows << std::endl;
 
             
-                // Draw Map point and keyframe pose
-                // Map Points
-                std::vector<cv::Point3f> LandMarks = DB->GetKF3dPoint(ReferenceKFId);
-                for(int i = 0; i < LandMarks.size(); i++){
-                    GLdouble X_map(LandMarks[i].x), Y_map(LandMarks[i].y), Z_map(LandMarks[i].z);
-                    show_trajectory(X_map, Y_map, Z_map, 0.0, 0.0, 0.0, 0.01);
-                }
 
-                // VPS Result Pose
-                show_trajectory_keyframe(Pose, 0.0, 0.0, 1.0, 0.5, 3.5);
-                glFlush();
-                cv::imshow("queryImg", QueryImg);        
-            
             
             }
         test_file << timestamps[image_num] << " " << image_num << " " << DBoW2Result_KF_imageNum << " " << Selected_KF_imageNum << " " << ret[0].Id << " " << ReferenceKFId << std::endl;
@@ -225,8 +214,31 @@ int main(int argc, char **argv)
         std::cout << "SolvePnPResult  !!!!!!!!!!!! " << std::endl;
         std::cout << Pose << std::endl;
         std::cout << " SolvePnPInlier Ratio : " << PnPInlierRatio << std::endl;
-        std::cout << " Inliers num  : " << InlierNum << std::endl;
+        std::cout << " Inliers num  : " << Inliers.rows << std::endl;
+        // std::cout << Inliers << std::endl;
+ 
+                // Draw Map point and keyframe pose
+                // Map Points
+                std::vector<cv::Point3f> LandMarks = DB->GetKF3dPoint(ReferenceKFId);
+                for(int i = 0; i < LandMarks.size(); i++){
+                    GLdouble X_map(LandMarks[i].x), Y_map(LandMarks[i].y), Z_map(LandMarks[i].z);
+                    show_trajectory(X_map, Y_map, Z_map, 0.0, 0.0, 0.0, 0.01);
+                }
 
+            // For Draw Inliers Match
+            std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(ReferenceKFId);
+            VPStest.InlierMatchResult(Matches, Inliers);
+            cv::Mat MatchImg;
+            std::cout << Matches.size() << std::endl;
+
+            cv::drawMatches(QueryImg, QKeypoints, DB_images[ReferenceKFId], DB2dMatchForDraw, Matches, MatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+            // cv::Size a = MatchImg.size();
+            cv::resize(MatchImg, MatchImg, cv::Size(1737, 376));
+            cv::imshow("MatchImg", MatchImg);
+            
+            // VPS Result Pose
+            show_trajectory_keyframe(Pose, 0.0, 0.0, 1.0, 0.5, 3.5);
+            glFlush();
 
         // cv::waitKey();
         
@@ -243,6 +255,7 @@ int main(int argc, char **argv)
     file.close();
     test_file.close();
     std::cout << " Finish VPS test " << std::endl;
+    cv::imshow("img", DB_images[0]);
     cv::waitKey();
     return 0;
 }

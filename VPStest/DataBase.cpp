@@ -10,10 +10,13 @@ void DataBase::serialize(Archive &ar, const unsigned int version)
         ar & Descriptors;
         ar & KFtoMPIdx;
         ar & timestamps;
+        ar & KeyPointInMap;
 
 }
 template void DataBase::serialize(boost::archive::binary_iarchive&, const unsigned int);
 template void DataBase::serialize(boost::archive::binary_oarchive&, const unsigned int);
+
+
 
 cv::Mat DataBase::GetKFMatDescriptor(int idx)
 {
@@ -37,6 +40,12 @@ std::vector<cv::Point3f> DataBase::GetKF3dPoint(int idx)
     }
 
     return KFLandmark;
+}
+
+std::vector<cv::KeyPoint> DataBase::GetKF2dPoint(int idx)
+{
+    std::vector< cv::KeyPoint > KF2dPoints = KeyPointInMap[idx];
+    return KF2dPoints;
 }
 
 cv::Mat DataBase::GetNearReferenceKFMatDescriptor(int rkidx, int nearRkN)

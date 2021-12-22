@@ -21,7 +21,8 @@ public:
 
 
     // Keyframe info
-    std::map< int, std::vector< int > > KFtoMPIdx; // KFid - MPidx 
+    std::map< int, std::vector< int > > KFtoMPIdx; // KFid - MPidx
+    std::map< int, std::vector< cv::KeyPoint > > KeyPointInMap; 
     std::vector<double> timestamps;
 
 
@@ -31,9 +32,11 @@ public:
     void serialize(Archive &ar, const unsigned int version);
 
    
-    
+
+
     cv::Mat GetKFMatDescriptor(int idx);
     std::vector<cv::Point3f> GetKF3dPoint(int idx);
+    std::vector<cv::KeyPoint> GetKF2dPoint(int idx);
     cv::Mat GetNearReferenceKFMatDescriptor(int rkidx, int nearRkN);
     std::vector<cv::Point3f> GetNearReferenceKF3dPoint(int rkidx, int nearRkN);
 

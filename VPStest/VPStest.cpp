@@ -108,11 +108,12 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
 
 }
 
-double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, int KFid, Eigen::Matrix4f &Pose, int &inlier_num)
+double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, int KFid, Eigen::Matrix4f &Pose, cv::Mat &Inliers, std::vector<cv::DMatch> &GoodMatches_)
 {
     std::vector<cv::DMatch> Matches;
     std::vector<cv::Point3f> Match3dpts;
-    std::vector<cv::Point2f> Match2dpts; 
+    std::vector<cv::Point2f> Match2dpts;
+    std::vector<cv::KeyPoint> DB2dpts; 
     int NearSearchNum = 0;
     float Disthres = 100.0;
 
@@ -139,7 +140,8 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
             index++;
         }
     }
-
+    
+    DB2dpts = DB->GetKF2dPoint(KFid);
     std::cout << " After erase match size : " << GoodMatches.size() << std::endl;
     for(int i = 0; i < GoodMatches.size(); i++){
         // std::cout << GoodMatches[i].distance << " ";
@@ -154,18 +156,20 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
 
     }
 
-
-    cv::Mat R, T, RT, inliers;
-    cv::solvePnPRansac(Match3dpts, Match2dpts, K, cv::noArray(), R, T, true, 100, 3.0F, 0.99, inliers, 0 );
-    inlier_num = inliers.rows;
-    double PnPInlierRatio = (double)inliers.rows / (double)Match3dpts.size();
+    GoodMatches_ = GoodMatches;
+    cv::Mat R, T, RT;
+    cv::solvePnPRansac(Match3dpts, Match2dpts, K, cv::noArray(), R, T, false, 1000, 3.0F, 0.99, Inliers, 0 );
+    // inlier_num = Inliers.rows;
+    double PnPInlierRatio = (double)Inliers.rows / (double)Match3dpts.size();
     cv::Rodrigues(R, R);
     Pose << R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), T.at<double>(0, 0),
             R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), T.at<double>(1, 0),
             R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), T.at<double>(2, 0),
             0, 0, 0, 1;
-    
     Pose = Pose.inverse();
+    
+
+    
     return PnPInlierRatio;
 
 }
@@ -180,4 +184,23 @@ int VPStest::FindKFImageNum(int KFid, DataBase* DB, std::vector<double> timestam
     }
 
     return index;
+}
+
+void VPStest::InlierMatchResult(std::vector<cv::DMatch> &Matches, cv::Mat Inliers)
+{
+
+    
+    std::vector<cv::KeyPoint> QMatch2dpts;
+    std::vector<cv::DMatch> Matches_;
+
+    for(int i = 0; i < Inliers.rows; i++){
+        int index = Inliers.at<int>(i, 0);
+                                    
+
+            
+        Matches_.push_back(Matches[index]);
+    }
+    
+    Matches.clear();
+    Matches = Matches_;
 }
