@@ -96,25 +96,25 @@ int main(int argc, char **argv)
     // Write txt
     int count = 0;
     int Posethres = 10;
-    for(int i = 0; i < timestamps.size(); i++){
+    // for(int i = 0; i < timestamps.size(); i++){
         
 
 
-        if(std::abs(RcamGTPose[i](2) - EstimatedPose[i](2)) < Posethres && std::abs(RcamGTPose[i](0) - EstimatedPose[i](0)) < Posethres && std::abs(RcamGTPose[i](1) - EstimatedPose[i](1)) < Posethres){
+    //     if(std::abs(RcamGTPose[i](2) - EstimatedPose[i](2)) < Posethres && std::abs(RcamGTPose[i](0) - EstimatedPose[i](0)) < Posethres && std::abs(RcamGTPose[i](1) - EstimatedPose[i](1)) < Posethres){
             
             
-            SelectedGTPose_file << timestamps[i] << " " << RcamGTPose[i](0) << " " << RcamGTPose[i](1) << " " << RcamGTPose[i](2) << " "
-            << RcamGTPose[i](3) << " " << RcamGTPose[i](4) << " " << RcamGTPose[i](5) << " " << RcamGTPose[i](6) << std::endl;
+    //         SelectedGTPose_file << timestamps[i] << " " << RcamGTPose[i](0) << " " << RcamGTPose[i](1) << " " << RcamGTPose[i](2) << " "
+    //         << RcamGTPose[i](3) << " " << RcamGTPose[i](4) << " " << RcamGTPose[i](5) << " " << RcamGTPose[i](6) << std::endl;
             
-            SelectedEsPose_file << timestamps[i] << " " << EstimatedPose[i](0) << " " << EstimatedPose[i](1) << " " << EstimatedPose[i](2) << " "
-            << EstimatedPose[i](3) << " " << EstimatedPose[i](4) << " " << EstimatedPose[i](5) << " " << EstimatedPose[i](6) << std::endl;            
+    //         SelectedEsPose_file << timestamps[i] << " " << EstimatedPose[i](0) << " " << EstimatedPose[i](1) << " " << EstimatedPose[i](2) << " "
+    //         << EstimatedPose[i](3) << " " << EstimatedPose[i](4) << " " << EstimatedPose[i](5) << " " << EstimatedPose[i](6) << std::endl;            
             
-            count++;
+    //         count++;
 
-        }
+    //     }
 
-    }
-std::cout << count << std::endl;
+    // }
+// std::cout << count << std::endl;
 std::cout << ATE_RMS_error << std::endl;
 std::cout << RPE_RMS_error << std::endl;
 

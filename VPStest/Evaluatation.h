@@ -3,7 +3,27 @@
 #include <opencv2/core.hpp>
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
+#include <cmath>
 
+bool ISNaN(Eigen::VectorXf Es)
+{
+    bool Estimate = true;
+    
+    bool IsNan_x = isnan(Es(0));
+    bool IsNan_y = isnan(Es(1));
+    bool IsNan_z = isnan(Es(2));
+
+    bool IsNan_qx = isnan(Es(3));
+    bool IsNan_qy = isnan(Es(4));
+    bool IsNan_qz = isnan(Es(5));
+    bool IsNan_qw = isnan(Es(6));
+
+    if(IsNan_x || IsNan_y || IsNan_z || IsNan_qx || IsNan_qy || IsNan_qz || IsNan_qw)
+        Estimate = false;
+    
+    return Estimate;
+
+}
 
 
 float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::VectorXf> Es)
@@ -13,6 +33,13 @@ float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen
     int Posethres = 10;
     for(int i = 0; i < GT.size(); i++){
         
+        if(ISNaN(Es[i]) == false){
+            std::cout << Es[i](0) << std::endl;
+            std::cout << count << std::endl;
+            
+            continue;
+        }
+
         Eigen::Quaternionf GT_q;
         Eigen::Quaternionf Es_q;
 
@@ -40,7 +67,7 @@ float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen
                     Es_R(2, 0), Es_R(2, 1), Es_R(2, 2), Es[i](2),
                     0, 0, 0, 1;        
     
-        if(std::abs(GT[i](2) - Es[i](2)) < Posethres && std::abs(GT[i](0) - Es[i](0)) < Posethres && std::abs(GT[i](1) - Es[i](1)) < Posethres){
+        // if(std::abs(GT[i](2) - Es[i](2)) < Posethres && std::abs(GT[i](0) - Es[i](0)) < Posethres && std::abs(GT[i](1) - Es[i](1)) < Posethres){
             
             Eigen::Matrix4f RelativePose = GTMotion.inverse() * EsMotion;
             Eigen::Vector3f RelativeTrans;
@@ -52,11 +79,11 @@ float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen
             count++;
 
 
-        }    
+        // }    
     
     }
     float RMS_Error_ = std::sqrt(RMS_Error / count);
-
+    std::cout << "ATE conut : " << count << std::endl;
     return RMS_Error_;
 }
 
@@ -71,7 +98,7 @@ float RelativePoseError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::Vect
         
  
         
-        if(std::abs(GT[i](2) - Es[i](2)) < Posethres && std::abs(GT[i](0) - Es[i](0)) < Posethres && std::abs(GT[i](1) - Es[i](1)) < Posethres){
+        // if(std::abs(GT[i](2) - Es[i](2)) < Posethres && std::abs(GT[i](0) - Es[i](0)) < Posethres && std::abs(GT[i](1) - Es[i](1)) < Posethres){
             
         if(currindex == 0){
             lastindex = i;
@@ -79,6 +106,13 @@ float RelativePoseError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::Vect
             continue;
         }    
         
+        if(ISNaN(Es[i]) == false){
+            std::cout << Es[i](0) << std::endl;
+            std::cout << count << std::endl;
+            
+            continue;
+        }
+
         currindex = i;
         // std::cout << lastindex << "   " << currindex << std::endl;
         Eigen::Quaternionf GT_q_curr, GT_q_last;
@@ -149,10 +183,10 @@ float RelativePoseError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::Vect
             count++;
 
             lastindex = currindex;
-        }  
+        // }  
 
     }
-    // std::cout << "RPE count : " << count << std::endl;
+    std::cout << "RPE count : " << count << std::endl;
     float RMS_Error_ = std::sqrt(RMS_Error / count);
 
     return RMS_Error_;
@@ -163,15 +197,15 @@ Eigen::VectorXf LeftCamToRightCam(Eigen::VectorXf Leftcam)
 {
     Eigen::Matrix4f BaselineMotion;
     // kitti 04-12
-    // BaselineMotion <<   1, 0, 0, 0.537126981164f,
-    //                     0, 1, 0, 0,
-    //                     0, 0, 1, 0,
-    //                     0, 0, 0, 1;
-    // kitti 00-02
-    BaselineMotion <<   1, 0, 0, 0.555165012698f,
+    BaselineMotion <<   1, 0, 0, 0.537126981164f,
                         0, 1, 0, 0,
                         0, 0, 1, 0,
                         0, 0, 0, 1;
+    // kitti 00-02
+    // BaselineMotion <<   1, 0, 0, 0.555165012698f,
+    //                     0, 1, 0, 0,
+    //                     0, 0, 1, 0,
+    //                     0, 0, 0, 1;
     
     Eigen::VectorXf Rightcam(7);
 

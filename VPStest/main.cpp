@@ -110,15 +110,15 @@ int main(int argc, char **argv)
 
     // Save PnPinlier result
     ofstream file;
-    file.open("Kitti00_VPStest_70%_PnP_Result.txt");
+    file.open("Kitti05_VPStest_20%_PnP_Result.txt");
 
     // Save trajectory result
     ofstream traj_file;
-    traj_file.open("Kitti00_VPStest_70%_Pose_result.txt");
+    traj_file.open("Kitti05_VPStest_20%_Pose_result.txt");
 
     // test file result
     ofstream test_file;
-    test_file.open("Kitti00_test_70%_Result.txt");
+    test_file.open("Kitti05_test_20%_Result.txt");
 
     time_t start = time(NULL);
     
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
 
         std::vector<cv::Mat> VQDescriptors = MatToVectorMat(QDescriptors);
         db.query(VQDescriptors, ret, 20);
-        std::cout << ret << std::endl;
+        // std::cout << ret << std::endl;
         std::cout << "High score keyframe  num : "  << ret[0].Id << std::endl;
         // "       word num : " << ret[0].nWords << std::endl;
         // VPStest.SetCandidateKFid(ret);

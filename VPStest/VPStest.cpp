@@ -157,18 +157,25 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
     }
 
     GoodMatches_ = GoodMatches;
-    cv::Mat R, T, RT;
-    cv::solvePnPRansac(Match3dpts, Match2dpts, K, cv::noArray(), R, T, false, 1000, 3.0F, 0.99, Inliers, 0 );
-    // inlier_num = Inliers.rows;
-    double PnPInlierRatio = (double)Inliers.rows / (double)Match3dpts.size();
-    cv::Rodrigues(R, R);
-    Pose << R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), T.at<double>(0, 0),
-            R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), T.at<double>(1, 0),
-            R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), T.at<double>(2, 0),
-            0, 0, 0, 1;
-    Pose = Pose.inverse();
-    
 
+    cv::Mat R, T, RT;
+    double PnPInlierRatio = 0;
+    bool PnPSuccess = cv::solvePnPRansac(Match3dpts, Match2dpts, K, cv::noArray(), R, T, false, 300, 3.0F, 0.99, Inliers, 0 );
+    // inlier_num = Inliers.rows;
+    std::cout << " SolvePnP result  : " << PnPSuccess << std::endl;
+    
+        
+        PnPInlierRatio = (double)Inliers.rows / (double)Match3dpts.size();
+        cv::Rodrigues(R, R);
+        Pose << R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), T.at<double>(0, 0),
+                R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), T.at<double>(1, 0),
+                R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), T.at<double>(2, 0),
+                0, 0, 0, 1;
+        Pose = Pose.inverse();
+    
+ 
+         
+    
     
     return PnPInlierRatio;
 

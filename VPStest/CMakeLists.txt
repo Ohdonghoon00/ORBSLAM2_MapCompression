@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.5.0)
 project(VPStest)
 set(CMAKE_BUILD_TYPE Release)
-find_package(OpenCV REQUIRED )
+# find_package(OpenCV REQUIRED )
+find_package(OpenCV 3.2.0 REQUIRED)
 # find_package(Ceres REQUIRED)
 find_package(Pangolin REQUIRED)
 
