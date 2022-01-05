@@ -2,7 +2,7 @@
 #include "DataBase.h"
 #include "VPStest.h"
 #include "ORBVocabulary.h"
-#include "Parameter.h"
+// #include "Parameter.h"
 #include "Converter.h"
 #include "Evaluatation.h" 
 
@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 
     // Write txt
     int count = 0;
-    int Posethres = 10;
+    int Posethres = 1;
     // for(int i = 0; i < timestamps.size(); i++){
         
 

@@ -25,7 +25,7 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> CalculateObservationCountWeight(ORB_SLA
     
     for(int i = 0; i < PointCloudNum_; i++)
     {
-        q[i] = (double)AllMpptr[i]->GetObservations().size() / (double)KeyframeNum;
+        q[i] = ((double)KeyframeNum - (double)AllMpptr[i]->GetObservations().size()) / (double)KeyframeNum;
     }
     return q;
 }

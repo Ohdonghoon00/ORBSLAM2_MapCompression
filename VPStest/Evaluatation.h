@@ -30,7 +30,7 @@ float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen
 {
     float RMS_Error(0.0);
     int count = 0;
-    int Posethres = 10;
+    float Posethres = 0.3;
     for(int i = 0; i < GT.size(); i++){
         
         if(ISNaN(Es[i]) == false){
@@ -39,7 +39,6 @@ float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen
             
             continue;
         }
-
         Eigen::Quaternionf GT_q;
         Eigen::Quaternionf Es_q;
 
@@ -67,7 +66,7 @@ float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen
                     Es_R(2, 0), Es_R(2, 1), Es_R(2, 2), Es[i](2),
                     0, 0, 0, 1;        
     
-        // if(std::abs(GT[i](2) - Es[i](2)) < Posethres && std::abs(GT[i](0) - Es[i](0)) < Posethres && std::abs(GT[i](1) - Es[i](1)) < Posethres){
+        if(std::abs(GT[i](2) - Es[i](2)) < Posethres && std::abs(GT[i](0) - Es[i](0)) < Posethres && std::abs(GT[i](1) - Es[i](1)) < Posethres){
             
             Eigen::Matrix4f RelativePose = GTMotion.inverse() * EsMotion;
             Eigen::Vector3f RelativeTrans;
@@ -79,8 +78,11 @@ float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen
             count++;
 
 
-        // }    
-    
+        }    
+        else{
+            std::cout << " failure image Num  : ";
+            std::cout << i + 1 << " ";
+        }
     }
     float RMS_Error_ = std::sqrt(RMS_Error / count);
     std::cout << "ATE conut : " << count << std::endl;
@@ -92,13 +94,19 @@ float RelativePoseError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::Vect
     float RMS_Error(0.0);
     int count = 0;
     int lastindex(0), currindex(0);
-    int Posethres = 10;
+    float Posethres = 0.3;
 
     for(int i = 0; i < GT.size(); i++){
         
+        if(std::abs(GT[i](2) - Es[i](2)) < Posethres && std::abs(GT[i](0) - Es[i](0)) < Posethres && std::abs(GT[i](1) - Es[i](1)) < Posethres){
  
+        if(ISNaN(Es[i]) == false){
+            std::cout << Es[i](0) << std::endl;
+            std::cout << count << std::endl;
+            
+            continue;
+        }
         
-        // if(std::abs(GT[i](2) - Es[i](2)) < Posethres && std::abs(GT[i](0) - Es[i](0)) < Posethres && std::abs(GT[i](1) - Es[i](1)) < Posethres){
             
         if(currindex == 0){
             lastindex = i;
@@ -106,12 +114,6 @@ float RelativePoseError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::Vect
             continue;
         }    
         
-        if(ISNaN(Es[i]) == false){
-            std::cout << Es[i](0) << std::endl;
-            std::cout << count << std::endl;
-            
-            continue;
-        }
 
         currindex = i;
         // std::cout << lastindex << "   " << currindex << std::endl;
@@ -183,7 +185,7 @@ float RelativePoseError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::Vect
             count++;
 
             lastindex = currindex;
-        // }  
+        }  
 
     }
     std::cout << "RPE count : " << count << std::endl;
@@ -197,15 +199,15 @@ Eigen::VectorXf LeftCamToRightCam(Eigen::VectorXf Leftcam)
 {
     Eigen::Matrix4f BaselineMotion;
     // kitti 04-12
-    BaselineMotion <<   1, 0, 0, 0.537126981164f,
-                        0, 1, 0, 0,
-                        0, 0, 1, 0,
-                        0, 0, 0, 1;
-    // kitti 00-02
-    // BaselineMotion <<   1, 0, 0, 0.555165012698f,
+    // BaselineMotion <<   1, 0, 0, 0.537126981164f,
     //                     0, 1, 0, 0,
     //                     0, 0, 1, 0,
     //                     0, 0, 0, 1;
+    // kitti 00-02
+    BaselineMotion <<   1, 0, 0, 0.555165012698f,
+                        0, 1, 0, 0,
+                        0, 0, 1, 0,
+                        0, 0, 0, 1;
     
     Eigen::VectorXf Rightcam(7);
 
