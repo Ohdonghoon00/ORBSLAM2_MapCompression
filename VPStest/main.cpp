@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     initialize_window();
     
     
-    int nFeatures = 4000;
+    int nFeatures = 3000;
     float scaleFactor = 1.2;
     int nlevels = 8;
     int iniThFAST = 20;
@@ -110,15 +110,15 @@ int main(int argc, char **argv)
 
     // Save PnPinlier result
     ofstream file;
-    file.open("Kitti09_VPStest_20%_PnP_Result.txt");
+    file.open("MH01_VPStest_original_PnP_Result.txt");
 
     // Save trajectory result
     ofstream traj_file;
-    traj_file.open("Kitti09_VPStest_20%_Pose_result.txt");
+    traj_file.open("MH01_VPStest_original_Pose_result.txt");
 
     // test file result
     ofstream test_file;
-    test_file.open("Kitti09_test_20%_Result.txt");
+    test_file.open("MH01_test_original_Result.txt");
 
     time_t start = time(NULL);
     

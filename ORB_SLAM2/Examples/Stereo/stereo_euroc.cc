@@ -186,6 +186,36 @@ int main(int argc, char **argv)
     // Save camera trajectory
     SLAM.SaveTrajectoryTUM("CameraTrajectory.txt");
 
+    // Save in Original Database.h
+    SLAM.SaveDataBase("EurocMH03_DB_original.bin");
+    
+    // Map Compression
+    SLAM.MapCompression(0.7);
+
+    // Save in Compressed Database.h
+    SLAM.SaveDataBase("EurocMH03_DB_70%.bin"); // 0.7
+
+    // Map Compression
+    SLAM.MapCompression(0.7);
+
+    // Save in Compressed Database.h
+    SLAM.SaveDataBase("EurocMH03_DB_50%.bin"); // 0.7 * 0.7 = 0.49
+
+    // Map Compression
+    SLAM.MapCompression(0.7);
+
+    // Save in Compressed Database.h
+    SLAM.SaveDataBase("EurocMH03_DB_35%.bin"); // 0.7 ^ 3 = 0.343
+
+    // Map Compression
+    SLAM.MapCompression(0.6);
+
+    // Save in Compressed Database.h
+    SLAM.SaveDataBase("EurocMH03_DB_20%.bin"); // 0.343 * 0.6 = 0.2058
+
+    // Save Timestamp + Trajectory result to # time tx ty tz qx qy qz qw
+    SLAM.SavePose("EurocMH03_DB_Trajectory_result.txt");
+
     return 0;
 }
 

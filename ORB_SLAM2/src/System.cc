@@ -620,7 +620,7 @@ void System::SavePose(std::string filepath)
                 cam_pose.at<float>(2, 0), cam_pose.at<float>(2, 1), cam_pose.at<float>(2, 2);
         Eigen::Quaternionf q(rot);
 
-        file << AllKFptr[i]-> mTimeStamp << " " << 
+        file << setprecision(19) << AllKFptr[i]-> mTimeStamp << " " << 
                 cam_pose.at<float>(0, 3) << " " << cam_pose.at<float>(1, 3) << " " << cam_pose.at<float>(2, 3) << " " <<
                 q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
     }
