@@ -23,11 +23,14 @@ public:
     std::map< int, cv::Point3f > Landmarks;
     std::vector<cv::Mat> Descriptors;
 
+
     // Keyframe info
     std::map< int, std::vector< int > > KFtoMPIdx; // KFid - MPidx 
     std::map< int, std::vector< cv::KeyPoint > > KeyPointInMap;
     std::vector<double> timestamps;
 
+    // Keyframe Img
+    std::vector<cv::Mat> LeftKFimg, RightKFimg;
 
 
 

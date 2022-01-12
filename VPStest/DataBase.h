@@ -25,7 +25,8 @@ public:
     std::map< int, std::vector< cv::KeyPoint > > KeyPointInMap; 
     std::vector<double> timestamps;
 
-
+    // Keyframe Img
+    // std::vector<cv::Mat> LeftKFimg, RightKFimg;
 
     friend class boost::serialization::access;
     template<class Archive>

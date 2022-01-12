@@ -80,8 +80,8 @@ float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen
 
         }    
         else{
-            std::cout << " failure image Num  : ";
-            std::cout << i + 1 << " ";
+            // std::cout << " failure image Num  : ";
+            // std::cout << i + 1 << " ";
         }
     }
     float RMS_Error_ = std::sqrt(RMS_Error / count);

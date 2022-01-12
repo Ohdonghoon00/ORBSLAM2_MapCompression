@@ -43,17 +43,34 @@ target_link_libraries(Lib
   glut    
   )
 
-  add_executable(VPStest
-    main.cpp
+
+
+
+# Kitti
+add_executable(VPStest_kitti
+  main_kitti.cpp
 
 )
-target_link_libraries(VPStest Lib)
+target_link_libraries(VPStest_kitti Lib)
 
+# Euroc
+add_executable(VPStest_euroc
+  main_euroc.cpp
+
+)
+target_link_libraries(VPStest_euroc Lib)
+
+# Euroc Undistortion Img
+add_executable(Undistortion
+  undistortion_euroc.cpp
+
+)
+target_link_libraries(Undistortion Lib)
+
+# Evaluation
 add_executable(Evaluation
 Evaluation.cpp
-
 )
-
 target_link_libraries(Evaluation Lib)
 
 # add_executable(dbow2test
