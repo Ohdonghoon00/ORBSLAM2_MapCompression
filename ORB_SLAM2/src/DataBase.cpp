@@ -22,7 +22,7 @@ template void DataBase::serialize(boost::archive::binary_oarchive&, const unsign
 
 cv::Mat DataBase::GetKFMatDescriptor(int idx)
 {
-    cv::Mat KFDescriptor = Descriptors[KFtoMPIdx[idx][0]];
+    cv::Mat KFDescriptor = Descriptors[KFtoMPIdx[idx].front()];
     for(size_t i = 0; i < KFtoMPIdx[idx].size() - 1; i++){
         cv::Mat Descriptor;
         Descriptor = Descriptors[KFtoMPIdx[idx][i + 1]];

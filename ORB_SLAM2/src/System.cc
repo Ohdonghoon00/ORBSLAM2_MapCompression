@@ -545,6 +545,53 @@ namespace ORB_SLAM2
         std::cout << " Finish Map Compression" << std::endl;
     }
 
+    void System::MapCompression2(double CompressionRatio)
+    {
+        // Map Compression
+        std::cout << "Map Compression ... " << std::endl;
+        GRBEnv env = GRBEnv();
+        GRBModel model = GRBModel(env);
+
+        long unsigned int PointCloudNum = DB->Landmarks.size();
+
+        std::cout << " Create Variables ... " << std::endl;
+        // Create Variables
+        std::vector<GRBVar> x = CreateVariablesBinaryVector(PointCloudNum, model);
+
+        std::cout << " Set Objective ... " << std::endl;
+        // Set Objective
+        Eigen::Matrix<double, Eigen::Dynamic, 1> q = CalculateObservationCountWeight(DB);
+        SetObjectiveILP(x, q, model);
+
+        std::cout << " Add Constraint ... " << std::endl;
+        // Add Constraint
+        Eigen::MatrixXd A = CalculateVisibilityMatrix(mpMap);
+        AddConstraint(mpMap, model, A, x, CompressionRatio);
+
+        std::cout << std::endl;
+
+        std::cout << " Optimize model ... " << std::endl;
+        // Optimize model
+        model.optimize();
+
+        std::cout << "Obj: " << model.get(GRB_DoubleAttr_ObjVal) << endl;
+
+        std::cout << std::endl;
+
+        // Erase Map Point
+        size_t index = 0;
+        for (size_t i = 0; i < x.size(); i++)
+        {
+
+            if (x[i].get(GRB_DoubleAttr_X) == 0)
+            {
+                mpMap->EraseMapPoint((mpMap->GetAllMapPoints())[i - index]);
+                index++;
+            }
+        }
+        std::cout << " Finish Map Compression" << std::endl;
+    }
+
     void System::SaveDataBase(std::string filepath)
     {
         DB->Descriptors.clear();
@@ -610,9 +657,6 @@ namespace ORB_SLAM2
                 cv::KeyPoint Point2d = AllKFptr[i]->mvKeys[KeypointIdx];
                 DB->KeyPointInMap[i].push_back(Point2d);
                 
-                
-                
-               
                 cv::Point3f mp;
                 mp.x = (j->GetWorldPos()).at<float>(0, 0);
                 mp.y = (j->GetWorldPos()).at<float>(1, 0);
@@ -641,8 +685,7 @@ namespace ORB_SLAM2
             }
         }
         std::cout << "  DB landmark num : " << DB->Landmarks.size() << std::endl;
-        
-
+                
         // Saved DataBase to Binary file
         std::ofstream out(filepath, std::ios_base::binary);
         if (!out)
@@ -654,6 +697,10 @@ namespace ORB_SLAM2
         oa << DB;
         out.close();
     }
+                
+               
+        
+
 
     void System::SavePose(std::string filepath)
     {
