@@ -549,32 +549,41 @@ namespace ORB_SLAM2
     void System::SaveCompressedDataBase(std::vector<GRBVar> x, std::string filepath)
     {
         CompressedDB = new DataBase();
-        CompressedDB = OriginalDB;
-        
+        *CompressedDB = *OriginalDB;
+        std::cout << "Original Landmark num : " << x.size() << std::endl;
         int index = 0;
         for(size_t i = 0; i < x.size(); i++){
             
             if (x[i].get(GRB_DoubleAttr_X) == 0){
                 
-                CompressedDB->Landmarks.erase(i - index);
-                CompressedDB->Landmarks.erase(CompressedDB->Landmarks.begin() + i - index);
+                CompressedDB->Landmarks.erase(i);
+                CompressedDB->Descriptors.erase(i);
                 index++;
                 
                 for(int j = 0; j < CompressedDB->KFtoMPIdx.size(); j++){
-                    for(int k = 0; k < CompressedDB->KFtoMPIdx[j].size(); k++){
-                        auto it = std::find(CompressedDB->KFtoMPIdx[j].begin(), CompressedDB->KFtoMPIdx[j].end(), i);
-                        if(it == CompressedDB->KFtoMPIdx[j].end())
-                            ;
-                        else{
-                            int idx = it - CompressedDB->KFtoMPIdx[j].begin();
-                            CompressedDB->KFtoMPIdx.erase(CompressedDB->KFtoMPIdx.begin() + idx);
-                            CompressedDB->KeyPointInMap.erase(CompressedDB->KeyPointInMap.begin() + idx);
-                        }
+                    
+                    auto it = std::find(CompressedDB->KFtoMPIdx[j].begin(), CompressedDB->KFtoMPIdx[j].end(), i);
+                    if(it == CompressedDB->KFtoMPIdx[j].end())
+                        ;
+                    else{
+                        int idx = it - CompressedDB->KFtoMPIdx[j].begin();
+                        CompressedDB->KFtoMPIdx[j].erase(CompressedDB->KFtoMPIdx[j].begin() + idx);
+                        CompressedDB->KeyPointInMap[j].erase(CompressedDB->KeyPointInMap[j].begin() + idx);
                     }
+                    
                 }
             }
         }
+        // std::map< int, cv::Point3f > Landmarks_(CompressedDB->Landmarks);
+        // CompressedDB->Landmarks.clear();
+        // std::map<int, cv::Point3f>::iterator iter;
+        // int cnt = 0;
+        // for(iter = Landmarks_.begin(); iter != Landmarks_.end(); iter++){
+        //     CompressedDB->Landmarks[cnt++] = iter->second;
+        // }
+
         std::cout << "Compressed landmark num : " << CompressedDB->Landmarks.size() << std::endl;
+        std::cout << "Compressed landmark num : " << CompressedDB->Descriptors.size() << std::endl;
         // Saved DataBase to Binary file
         std::ofstream out(filepath, std::ios_base::binary);
         if (!out)
@@ -589,26 +598,27 @@ namespace ORB_SLAM2
 
     void System::MapCompression2(double CompressionRatio, std::string filepath)
     {
+        try{
         // Map Compression
         std::cout << "Map Compression ... " << std::endl;
         GRBEnv env = GRBEnv();
         GRBModel model = GRBModel(env);
 
         long unsigned int PointCloudNum = OriginalDB->Landmarks.size();
-
+        std::cout << "original landmark num : " << PointCloudNum << std::endl;
         std::cout << " Create Variables ... " << std::endl;
         // Create Variables
         std::vector<GRBVar> x = CreateVariablesBinaryVector(PointCloudNum, model);
 
         std::cout << " Set Objective ... " << std::endl;
         // Set Objective
-        Eigen::Matrix<double, Eigen::Dynamic, 1> q = CalculateObservationCountWeight(OriginalDB);
+        Eigen::Matrix<double, Eigen::Dynamic, 1> q = CalculateObservationCountWeight2(OriginalDB);
         SetObjectiveILP(x, q, model);
 
         std::cout << " Add Constraint ... " << std::endl;
         // Add Constraint
-        Eigen::MatrixXd A = CalculateVisibilityMatrix(OriginalDB);
-        AddConstraint(OriginalDB, model, A, x, CompressionRatio);
+        Eigen::MatrixXd A = CalculateVisibilityMatrix2(OriginalDB);
+        AddConstraint2(OriginalDB, model, A, x, CompressionRatio);
 
         std::cout << std::endl;
 
@@ -616,12 +626,35 @@ namespace ORB_SLAM2
         // Optimize model
         model.optimize();
 
-        std::cout << "Obj: " << model.get(GRB_DoubleAttr_ObjVal) << endl;
+        int optimstatus = model.get(GRB_IntAttr_Status);
+        cout << "Optimization complete" << endl;
+        double objval = 0;
+        if (optimstatus == GRB_OPTIMAL) {
+        objval = model.get(GRB_DoubleAttr_ObjVal);
+        cout << "Optimal objective: " << objval << endl;
+        } else if (optimstatus == GRB_INF_OR_UNBD) {
+        cout << "Model is infeasible or unbounded" << endl;
+        } else if (optimstatus == GRB_INFEASIBLE) {
+        cout << "Model is infeasible" << endl;
+        } else if (optimstatus == GRB_UNBOUNDED) {
+        cout << "Model is unbounded" << endl;
+        } else {
+        cout << "Optimization was stopped with status = "
+            << optimstatus << endl;
+        }
+
+        // std::cout << "Obj: " << model.get(GRB_DoubleAttr_ObjVal) << endl;
+        SaveCompressedDataBase(x, filepath);
+        } catch(GRBException e){
+            std::cout << "Error code : " << e.getErrorCode() << std::endl;
+            std::cout << " Message: " << e.getMessage() << std::endl;
+        } catch(...){
+            std::cout << "Exceptioon during optimization" << std::endl;
+        }
 
         std::cout << std::endl;
 
         // Erase Map Point
-        SaveCompressedDataBase(x, filepath);
 
         std::cout << " Finish Map Compression" << std::endl;
     }
@@ -659,7 +692,7 @@ namespace ORB_SLAM2
 
                 bool InKF = false;
                 int Mpid = 0;
-                for(int k = 0; k < OriginalDB->Landmarks.size(); k++){
+                for(size_t k = 0; k < OriginalDB->Landmarks.size(); k++){
                     if(mp == OriginalDB->Landmarks[k]){
                         InKF = true;
                         Mpid = k;
@@ -673,14 +706,22 @@ namespace ORB_SLAM2
                 }
                 else{
                     OriginalDB->Landmarks[MaxMapId] = mp;
-                    OriginalDB->Descriptors.push_back(j->GetDescriptor());
+                    OriginalDB->Descriptors[MaxMapId] = j->GetDescriptor();
                     OriginalDB->KFtoMPIdx[i].push_back(MaxMapId);
                     MaxMapId++;
                 }
             }
         }
+        // for(size_t i = 0; i < OriginalDB->KFtoMPIdx.size(); i++){
+        //     std::cout << "KF num : " << i << std::endl;
+        //     for(size_t j = 0; j < OriginalDB->KFtoMPIdx[i].size(); j++){
+        //         std::cout << OriginalDB->KFtoMPIdx[i][j] << " ";
+
+        //     }
+        //     std::cout << std::endl;
+        // }
         std::cout << "  DB landmark num : " << OriginalDB->Landmarks.size() << std::endl;
-                
+        std::cout << OriginalDB->GetObservationCount(5) << std::endl;
         // Saved DataBase to Binary file
         std::ofstream out(filepath, std::ios_base::binary);
         if (!out)

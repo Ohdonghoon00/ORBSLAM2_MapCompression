@@ -17,7 +17,7 @@
 // Converter
 cv::Mat VectorMatToMat(std::vector<cv::Mat> Descriptor)
 {
-    cv::Mat Descriptors(Descriptor[0]);
+    cv::Mat Descriptors(Descriptor.front());
     for(size_t i = 1; i < Descriptor.size(); i++){
         cv::vconcat(Descriptors, Descriptor[i], Descriptors);
     }

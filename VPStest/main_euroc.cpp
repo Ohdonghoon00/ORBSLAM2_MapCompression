@@ -27,7 +27,7 @@ using namespace DBoW2;
 
 int main(int argc, char **argv)
 {
-    /*
+    
     // Viewer
     glutInit(&argc, argv);
     initialize_window();
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
         
         // Input Voc
         cv::Mat DB_image = DB->LeftKFimg[i];
-                std::cout << i << "    " <<  DB->KFtoMPIdx[i].size() << std::endl;
+                // std::cout << i << "    " <<  DB->KFtoMPIdx[i].size() << std::endl;
 
         cv::Mat mask_, DBDescriptor_;
         std::vector<cv::KeyPoint> DBKeypoints_;
@@ -130,15 +130,15 @@ int main(int argc, char **argv)
 
     // Save PnPinlier result
     ofstream file;
-    file.open("MH01_VPStest_original_PnP_Result.txt");
+    file.open("MH02_VPStest_original_PnP_Result.txt");
 
     // Save trajectory result
     ofstream traj_file;
-    traj_file.open("MH01_VPStest_original_Pose_result.txt");
+    traj_file.open("MH02_VPStest_original_Pose_result.txt");
 
     // test file result
     ofstream test_file;
-    test_file.open("MH01_test_original_Result.txt");
+    test_file.open("MH02_test_original_Result.txt");
 
     time_t start = time(NULL);
     
@@ -179,20 +179,21 @@ int main(int argc, char **argv)
         ret.clear();
 
         std::vector<cv::Mat> VQDescriptors = MatToVectorMat(QDescriptors);
-        db.query(VQDescriptors, ret, 20);
-        // std::cout << ret << std::endl;
+        db.query(VQDescriptors, ret, 10);
+        std::cout << ret << std::endl;
         std::cout << "High score keyframe  num : "  << ret[0].Id << std::endl;
         // "       word num : " << ret[0].nWords << std::endl;
-        // VPStest.SetCandidateKFid(ret);
 
-        int DBoW2Result_KF_imageNum = VPStest.FindKFImageNum((int)ret[0].Id, DB, timestamps);
-        std::cout << "DBoW2Result KF image Num :  " << DBoW2Result_KF_imageNum << std::endl;        
 
         // FindReferenceKF
         std::cout << "Find Reference Keyframe !! " << std::endl;
-        // int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints);
-        int ReferenceKFId = ret[0].Id;
+        VPStest.SetCandidateKFid(ret);
+        int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints);
+        // int ReferenceKFId = ret[0].Id;
         std::cout << " Selected Keyframe num : " << ReferenceKFId << std::endl;
+        
+        int DBoW2Result_KF_imageNum = VPStest.FindKFImageNum(ret[0].Id, DB, timestamps);
+        std::cout << "DBoW2Result KF image Num :  " << DBoW2Result_KF_imageNum << std::endl;        
         
         // For Draw image 
         int Selected_KF_imageNum = VPStest.FindKFImageNum(ReferenceKFId, DB, timestamps);
@@ -221,7 +222,7 @@ int main(int argc, char **argv)
 
             
             }
-        // test_file << timestamps[image_num] << " " << image_num << " " << DBoW2Result_KF_imageNum << " " << Selected_KF_imageNum << " " << ret[0].Id << " " << ReferenceKFId << std::endl;
+        test_file << timestamps[image_num] << " " << image_num << " " << Selected_KF_imageNum << " " << DBoW2Result_KF_imageNum << std::endl;
         // }
         // Query imageNum, DB DBoW2 result imageNum, DB Selected result imagenum, DBoW2 KF result, selected KF result
         // if(image_num == 500) break;
@@ -229,7 +230,7 @@ int main(int argc, char **argv)
         // Print Result
         std::cout << "Place Recognition Result !!!!!!!!!!!! " << std::endl;
         std::cout << "Query image Num : " << image_num << std::endl;
-        std::cout << "DataBase image Num  : " <<  DBoW2Result_KF_imageNum << std::endl;
+        std::cout << "DataBase image Num  : " <<  Selected_KF_imageNum << std::endl;
         std::cout << "SolvePnPResult  !!!!!!!!!!!! " << std::endl;
         std::cout << Pose << std::endl;
         std::cout << " SolvePnPInlier Ratio : " << PnPInlierRatio << std::endl;
@@ -259,7 +260,7 @@ int main(int argc, char **argv)
             show_trajectory_keyframe(Pose, 0.0, 0.0, 1.0, 0.5, 3.5);
             glFlush();
 
-        cv::waitKey();
+        // cv::waitKey();
         
         image_num++;
         std::cout << std::endl;
@@ -277,7 +278,7 @@ int main(int argc, char **argv)
     std::cout << " Finish VPS test " << std::endl;
     cv::imshow("img", DB->LeftKFimg[0]);
     cv::waitKey();
-    */
+    
     return 0;
 }
 

@@ -9,8 +9,6 @@
 
 
 
-namespace ORB_SLAM2
-{
 
 class DataBase
 {
@@ -21,7 +19,7 @@ public:
     
     // Map info
     std::map< int, cv::Point3f > Landmarks;
-    std::vector<cv::Mat> Descriptors;
+    std::map< int, cv::Mat> Descriptors;
 
 
     // Keyframe info
@@ -56,10 +54,6 @@ public:
     int GetObservationCount(int idx);
 
 
-    ~DataBase()
-    {}
-
 
 };
 
-}

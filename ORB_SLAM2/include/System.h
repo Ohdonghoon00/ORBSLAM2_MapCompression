@@ -40,6 +40,7 @@
 #include "DataBase.h"
 #include "MapCompressionViewer.h"
 
+class DataBase;
 namespace ORB_SLAM2
 {
 
@@ -49,7 +50,7 @@ class Map;
 class Tracking;
 class LocalMapping;
 class LoopClosing;
-class DataBase;
+// class DataBase;
 
 class System
 {

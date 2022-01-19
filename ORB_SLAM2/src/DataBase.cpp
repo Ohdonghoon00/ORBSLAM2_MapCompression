@@ -2,8 +2,7 @@
 
 
 
-namespace ORB_SLAM2
-{
+
 
 template<class Archive>
 void DataBase::serialize(Archive &ar, const unsigned int version)
@@ -56,4 +55,3 @@ int DataBase::GetObservationCount(int idx)
     return count;
 }
 
-}

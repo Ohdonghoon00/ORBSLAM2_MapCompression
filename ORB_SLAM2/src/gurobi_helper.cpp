@@ -1,7 +1,6 @@
 #include "gurobi_helper.h"
 
 
-
 std::vector<GRBVar> CreateVariablesBinaryVector(int PointCloudNum, GRBModel& model_)
 {
     
@@ -9,7 +8,7 @@ std::vector<GRBVar> CreateVariablesBinaryVector(int PointCloudNum, GRBModel& mod
     x.resize(PointCloudNum);
     for(int i = 0; i < PointCloudNum; i++ )
     {
-        x[i] = model_.addVar(-5.0, 2.0, 0.0, GRB_BINARY);
+        x[i] = model_.addVar(0.0, 1.0, 0.0, GRB_BINARY);
     }
 
     return x;
@@ -30,17 +29,18 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> CalculateObservationCountWeight(ORB_SLA
     return q;
 }
 
-Eigen::Matrix<double, Eigen::Dynamic, 1> CalculateObservationCountWeight(ORB_SLAM2::DataBase* DB)
+Eigen::Matrix<double, Eigen::Dynamic, 1> CalculateObservationCountWeight2(DataBase* DB)
 {
     Eigen::Matrix<double, Eigen::Dynamic, 1> q;
     int PointCloudNum_ = DB->Landmarks.size();
     q.resize(PointCloudNum_);
     int KeyframeNum = DB->KFtoMPIdx.size();
     // std::vector<ORB_SLAM2::MapPoint*> AllMpptr = map_data->GetAllMapPoints();
-    
+    std::cout << "Keyframe num : " << KeyframeNum << std::endl;
     for(int i = 0; i < PointCloudNum_; i++)
     {
-        q[i] = ((double)KeyframeNum - (double)GetObservationCount(i) / (double)KeyframeNum;
+        q[i] = ((double)KeyframeNum - (double)(DB->GetObservationCount(i))) / (double)KeyframeNum;
+        // std::cout << q[i] << " ";
     }
     return q;
 }
@@ -78,18 +78,18 @@ Eigen::MatrixXd CalculateVisibilityMatrix(ORB_SLAM2::Map* map_data)
     return A;
 }
 
-Eigen::MatrixXd CalculateVisibilityMatrix(ORB_SLAM2::DataBase* DB)
+Eigen::MatrixXd CalculateVisibilityMatrix2(DataBase* DB)
 {
 
     int PointCloudNum_ = DB->Landmarks.size();
     int KeyframeNum = DB->KFtoMPIdx.size();
     Eigen::MatrixXd A(KeyframeNum, PointCloudNum_); 
     A.setZero();
-    for(int i = 0; i < KFtoMPIdx.size(); i++ )
+    for(int i = 0; i < DB->KFtoMPIdx.size(); i++ )
         {
-            for(int j = 0; j < KFtoMPIdx[i].size(); j++)
+            for(int j = 0; j < DB->KFtoMPIdx[i].size(); j++)
             {
-                int idx = KFtoMPIdx[i][j];
+                int idx = DB->KFtoMPIdx[i][j];
                 A(i, idx) = 1.0;
             }
 
@@ -130,7 +130,7 @@ std::cout << totalNum << std::endl;
     model_.addConstr(TotalPointNum, GRB_EQUAL, totalNum);
 }
 
-void AddConstraint(ORB_SLAM2::DataBase* DB, GRBModel& model_, Eigen::MatrixXd A, std::vector<GRBVar> x, double CompressionRatio)
+void AddConstraint2(DataBase* DB, GRBModel& model_, Eigen::MatrixXd A, std::vector<GRBVar> x, double CompressionRatio)
 {
     GRBLinExpr MinKeyframePointNum = 0;
     GRBLinExpr TotalPointNum = 0;
@@ -141,7 +141,7 @@ void AddConstraint(ORB_SLAM2::DataBase* DB, GRBModel& model_, Eigen::MatrixXd A,
     int PointCloudNum_ = DB->Landmarks.size();
     int KeyframeNum = DB->KFtoMPIdx.size();
     
-    double totalNum = (double)PointCloudNum_ * CompressionRatio);
+    double totalNum = (double)(int)(PointCloudNum_ * CompressionRatio);
 std::cout << "Total Landmark num after compression  : " << totalNum << std::endl;
     for(int i = 0; i < KeyframeNum; i++)
     {

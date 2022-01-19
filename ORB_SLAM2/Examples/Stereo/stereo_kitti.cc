@@ -135,37 +135,37 @@ int main(int argc, char **argv)
 
     
     // Save camera trajectory
-    SLAM.SaveTrajectoryKITTI("Kitti06_Trajectory.txt");
+    SLAM.SaveTrajectoryKITTI("Kitti08_Trajectory.txt");
 
     // Save in Original Database.h
-    SLAM.SaveDataBase("Kitti06_DB_original.bin");
+    SLAM.SaveOriginalDataBase("Kitti08_DB_original.bin");
     
     // Map Compression
-    SLAM.MapCompression(0.7);
+    SLAM.MapCompression2(0.7, "Kitti08_DB_70%.bin");
 
     // Save in Compressed Database.h
-    SLAM.SaveDataBase("Kitti06_DB_70%.bin"); // 0.7
+    // SLAM.SaveDataBase("Kitti08_DB_70%.bin"); // 0.7
 
     // Map Compression
-    SLAM.MapCompression(0.7);
+    SLAM.MapCompression2(0.5, "Kitti08_DB_50%.bin");
 
     // Save in Compressed Database.h
-    SLAM.SaveDataBase("Kitti06_DB_50%.bin"); // 0.7 * 0.7 = 0.49
+    // SLAM.SaveDataBase("Kitti08_DB_50%.bin"); // 0.7 * 0.7 = 0.49
 
     // Map Compression
-    SLAM.MapCompression(0.7);
+    SLAM.MapCompression2(0.35, "Kitti08_DB_35%.bin");
 
     // Save in Compressed Database.h
-    SLAM.SaveDataBase("Kitti06_DB_35%.bin"); // 0.7 ^ 3 = 0.343
+    // SLAM.SaveDataBase("Kitti08_DB_35%.bin"); // 0.7 ^ 3 = 0.343
 
     // Map Compression
-    SLAM.MapCompression(0.6);
+    SLAM.MapCompression2(0.2, "Kitti08_DB_20%.bin");
 
     // Save in Compressed Database.h
-    SLAM.SaveDataBase("Kitti06_DB_20%.bin"); // 0.343 * 0.6 = 0.2058
+    // SLAM.SaveDataBase("Kitti08_DB_20%.bin"); // 0.343 * 0.6 = 0.2058
 
     // Save Timestamp + Trajectory result to # time tx ty tz qx qy qz qw
-    SLAM.SavePose("Kitti06_DB_Trajectory_result.txt");
+    SLAM.SavePose("Kitti08_DB_Trajectory_result.txt");
 
    
 
@@ -201,8 +201,8 @@ void LoadImages(const string &strPathToSequence, vector<string> &vstrImageLeft,
     string strPrefixLeft = strPathToSequence + "/image_0/";
     string strPrefixRight = strPathToSequence + "/image_1/";
 
-    const int nTimes = vTimestamps.size();
-    // const int nTimes = 100;
+    // const int nTimes = vTimestamps.size();
+    const int nTimes = 30;
 
     vstrImageLeft.resize(nTimes);
     vstrImageRight.resize(nTimes);

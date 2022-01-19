@@ -11,8 +11,8 @@ void DataBase::serialize(Archive &ar, const unsigned int version)
         ar & KFtoMPIdx;
         ar & timestamps;
         ar & KeyPointInMap;
-        // ar & LeftKFimg;
-        // ar & RightKFimg;
+        ar & LeftKFimg;
+        ar & RightKFimg;
 
 }
 template void DataBase::serialize(boost::archive::binary_iarchive&, const unsigned int);
@@ -22,13 +22,14 @@ template void DataBase::serialize(boost::archive::binary_oarchive&, const unsign
 
 cv::Mat DataBase::GetKFMatDescriptor(int idx)
 {
-    cv::Mat KFDescriptor = Descriptors[KFtoMPIdx[idx][0]];
+    cv::Mat KFDescriptor = Descriptors[KFtoMPIdx[idx].front()];
     for(size_t i = 0; i < KFtoMPIdx[idx].size() - 1; i++){
+        
         cv::Mat Descriptor;
         Descriptor = Descriptors[KFtoMPIdx[idx][i + 1]];
         cv::vconcat(KFDescriptor, Descriptor, KFDescriptor);
     }
-        
+    
     return KFDescriptor;
 }    
 
@@ -96,3 +97,14 @@ std::vector<cv::Point3f> DataBase::GetNearReferenceKF3dPoint(int rkidx, int near
     return KFLandmark;
 }
 
+int DataBase::GetObservationCount(int idx)
+{
+    int count = 0;
+    for(int i = 0; i < KFtoMPIdx.size(); i++){
+        auto it = std::find(KFtoMPIdx[i].begin(), KFtoMPIdx[i].end(), idx);
+        if(it != KFtoMPIdx[i].end())
+            count++;
+    }
+
+    return count;
+}

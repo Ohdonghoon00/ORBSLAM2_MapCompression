@@ -17,7 +17,7 @@ public:
 
     // Map info
     std::map< int, cv::Point3f > Landmarks;
-    std::vector<cv::Mat> Descriptors;
+    std::map< int, cv::Mat> Descriptors;
 
 
     // Keyframe info
@@ -26,7 +26,7 @@ public:
     std::vector<double> timestamps;
 
     // Keyframe Img
-    // std::vector<cv::Mat> LeftKFimg, RightKFimg;
+    std::vector<cv::Mat> LeftKFimg, RightKFimg;
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -41,6 +41,7 @@ public:
     cv::Mat GetNearReferenceKFMatDescriptor(int rkidx, int nearRkN);
     std::vector<cv::Point3f> GetNearReferenceKF3dPoint(int rkidx, int nearRkN);
 
+    int GetObservationCount(int idx);
 
 
 
