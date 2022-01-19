@@ -190,31 +190,31 @@ int main(int argc, char **argv)
     SLAM.SaveKeyFrameTrajectoryTUM("EurocMH01_Keyframe_Trajectory.txt");
 
     // Save in Original Database.h
-    SLAM.SaveDataBase("EurocMH01_DB_original.bin");
+    SLAM.SaveOriginalDataBase("EurocMH01_DB_original.bin");
     
     // Map Compression
-    SLAM.MapCompression(0.7);
+    SLAM.MapCompression2(0.7, "EurocMH01_DB_70%.bin");
 
     // Save in Compressed Database.h
-    SLAM.SaveDataBase("EurocMH01_DB_70%.bin"); // 0.7
+    // SLAM.SaveCompressedDataBase("EurocMH01_DB_70%.bin"); // 0.7
 
     // Map Compression
-    SLAM.MapCompression(0.7);
+    SLAM.MapCompression2(0.5, "EurocMH01_DB_50%.bin");
 
     // Save in Compressed Database.h
-    SLAM.SaveDataBase("EurocMH01_DB_50%.bin"); // 0.7 * 0.7 = 0.49
+    // SLAM.SaveDataBase("EurocMH01_DB_50%.bin"); // 0.7 * 0.7 = 0.49
 
     // Map Compression
-    SLAM.MapCompression(0.7);
+    SLAM.MapCompression2(0.35, "EurocMH01_DB_35%.bin");
 
     // Save in Compressed Database.h
-    SLAM.SaveDataBase("EurocMH01_DB_35%.bin"); // 0.7 ^ 3 = 0.343
+    // SLAM.SaveDataBase("EurocMH01_DB_35%.bin"); // 0.7 ^ 3 = 0.343
 
     // Map Compression
-    SLAM.MapCompression(0.6);
+    SLAM.MapCompression2(0.2, "EurocMH01_DB_20%.bin");
 
     // Save in Compressed Database.h
-    SLAM.SaveDataBase("EurocMH01_DB_20%.bin"); // 0.343 * 0.6 = 0.2058
+    // SLAM.SaveDataBase("EurocMH01_DB_20%.bin"); // 0.343 * 0.6 = 0.2058
 
     // Save Timestamp + Trajectory result to # time tx ty tz qx qy qz qw
     SLAM.SavePose("EurocMH01_DB_Trajectory_result.txt");

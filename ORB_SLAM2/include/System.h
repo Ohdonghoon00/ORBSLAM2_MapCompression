@@ -128,8 +128,9 @@ public:
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
     void MapCompression(double CompressionRatio);
-    void MapCompression2(double CompressionRatio);
-    void SaveDataBase(std::string filepath);
+    void MapCompression2(double CompressionRatio, std::string filepath);
+    void SaveOriginalDataBase(std::string filepath);
+    void SaveCompressedDataBase(std::vector<GRBVar> x, std::string filepath);
     void SavePose(std::string filepath);
     void printMap(std::map<ORB_SLAM2::KeyFrame*,size_t> target_map);
 
@@ -141,7 +142,8 @@ private:
     Map* mpMap;
 
     // DataBase
-    DataBase* DB;
+    DataBase* OriginalDB;
+    DataBase* CompressedDB;
     
     // Input sensor
     eSensor mSensor;

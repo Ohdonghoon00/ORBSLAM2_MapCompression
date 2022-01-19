@@ -44,4 +44,16 @@ std::vector<cv::Point3f> DataBase::GetKF3dPoint(int idx)
     return KFLandmark;
 }
 
+int DataBase::GetObservationCount(int idx)
+{
+    int count = 0;
+    for(int i = 0; i < KFtoMPIdx.size(); i++){
+        auto it = std::find(KFtoMPIdx[i].begin(), KFtoMPIdx[i].end(), idx);
+        if(it != KFtoMPIdx[i].end())
+            count++;
+    }
+
+    return count;
+}
+
 }

@@ -32,7 +32,16 @@ public:
     // Keyframe Img
     std::vector<cv::Mat> LeftKFimg, RightKFimg;
 
-
+    DataBase(const DataBase &tc)
+    {
+        Landmarks = tc.Landmarks;
+        Descriptors = tc.Descriptors;
+        KFtoMPIdx = tc.KFtoMPIdx;
+        KeyPointInMap = tc.KeyPointInMap;
+        timestamps = tc.timestamps;
+        LeftKFimg = tc.LeftKFimg;
+        RightKFimg = tc.RightKFimg;
+    }
 
     // for save/load 
     friend class boost::serialization::access;
@@ -42,9 +51,13 @@ public:
     // get info
     cv::Mat GetKFMatDescriptor(int idx);
     std::vector<cv::Point3f> GetKF3dPoint(int idx);
+    
+    // function
+    int GetObservationCount(int idx);
 
 
-
+    ~DataBase()
+    {}
 
 
 };

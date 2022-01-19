@@ -75,7 +75,8 @@ namespace ORB_SLAM2
              << endl;
 
         // Create DataBase ( Save DataBase.h After SLAM )
-        DB = new DataBase();
+        OriginalDB = new DataBase();
+        
 
         // Create KeyFrame Database
         mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -545,14 +546,55 @@ namespace ORB_SLAM2
         std::cout << " Finish Map Compression" << std::endl;
     }
 
-    void System::MapCompression2(double CompressionRatio)
+    void System::SaveCompressedDataBase(std::vector<GRBVar> x, std::string filepath)
+    {
+        CompressedDB = new DataBase();
+        CompressedDB = OriginalDB;
+        
+        int index = 0;
+        for(size_t i = 0; i < x.size(); i++){
+            
+            if (x[i].get(GRB_DoubleAttr_X) == 0){
+                
+                CompressedDB->Landmarks.erase(i - index);
+                CompressedDB->Landmarks.erase(CompressedDB->Landmarks.begin() + i - index);
+                index++;
+                
+                for(int j = 0; j < CompressedDB->KFtoMPIdx.size(); j++){
+                    for(int k = 0; k < CompressedDB->KFtoMPIdx[j].size(); k++){
+                        auto it = std::find(CompressedDB->KFtoMPIdx[j].begin(), CompressedDB->KFtoMPIdx[j].end(), i);
+                        if(it == CompressedDB->KFtoMPIdx[j].end())
+                            ;
+                        else{
+                            int idx = it - CompressedDB->KFtoMPIdx[j].begin();
+                            CompressedDB->KFtoMPIdx.erase(CompressedDB->KFtoMPIdx.begin() + idx);
+                            CompressedDB->KeyPointInMap.erase(CompressedDB->KeyPointInMap.begin() + idx);
+                        }
+                    }
+                }
+            }
+        }
+        std::cout << "Compressed landmark num : " << CompressedDB->Landmarks.size() << std::endl;
+        // Saved DataBase to Binary file
+        std::ofstream out(filepath, std::ios_base::binary);
+        if (!out)
+        {
+            std::cout << "Cannot Write to Database File: " << std::endl;
+            exit(-1);
+        }
+        boost::archive::binary_oarchive oa(out, boost::archive::no_header);
+        oa << CompressedDB;
+        out.close();
+    } 
+
+    void System::MapCompression2(double CompressionRatio, std::string filepath)
     {
         // Map Compression
         std::cout << "Map Compression ... " << std::endl;
         GRBEnv env = GRBEnv();
         GRBModel model = GRBModel(env);
 
-        long unsigned int PointCloudNum = DB->Landmarks.size();
+        long unsigned int PointCloudNum = OriginalDB->Landmarks.size();
 
         std::cout << " Create Variables ... " << std::endl;
         // Create Variables
@@ -560,13 +602,13 @@ namespace ORB_SLAM2
 
         std::cout << " Set Objective ... " << std::endl;
         // Set Objective
-        Eigen::Matrix<double, Eigen::Dynamic, 1> q = CalculateObservationCountWeight(DB);
+        Eigen::Matrix<double, Eigen::Dynamic, 1> q = CalculateObservationCountWeight(OriginalDB);
         SetObjectiveILP(x, q, model);
 
         std::cout << " Add Constraint ... " << std::endl;
         // Add Constraint
-        Eigen::MatrixXd A = CalculateVisibilityMatrix(mpMap);
-        AddConstraint(mpMap, model, A, x, CompressionRatio);
+        Eigen::MatrixXd A = CalculateVisibilityMatrix(OriginalDB);
+        AddConstraint(OriginalDB, model, A, x, CompressionRatio);
 
         std::cout << std::endl;
 
@@ -579,28 +621,13 @@ namespace ORB_SLAM2
         std::cout << std::endl;
 
         // Erase Map Point
-        size_t index = 0;
-        for (size_t i = 0; i < x.size(); i++)
-        {
+        SaveCompressedDataBase(x, filepath);
 
-            if (x[i].get(GRB_DoubleAttr_X) == 0)
-            {
-                mpMap->EraseMapPoint((mpMap->GetAllMapPoints())[i - index]);
-                index++;
-            }
-        }
         std::cout << " Finish Map Compression" << std::endl;
     }
 
-    void System::SaveDataBase(std::string filepath)
+    void System::SaveOriginalDataBase(std::string filepath)
     {
-        DB->Descriptors.clear();
-        DB->KFtoMPIdx.clear();
-        DB->Landmarks.clear();
-        DB->timestamps.clear();
-        DB->KeyPointInMap.clear();
-        DB->LeftKFimg.clear();
-        DB->RightKFimg.clear();
 
         // DataBase.h
         std::cout << " Save DataBase " << std::endl;
@@ -608,44 +635,12 @@ namespace ORB_SLAM2
         std::vector<ORB_SLAM2::MapPoint *> AllMpptr = mpMap->GetAllMapPoints();
         std::sort(AllKFptr.begin(), AllKFptr.end(), ORB_SLAM2::KeyFrame::lId);
 
-        std::cout << " Keyframe num : " << AllKFptr.size() << std::endl;
-        std::cout << " Landmarks num : " << AllMpptr.size() << std::endl;
-        std::cout << " KeyframeInMap : " << mpMap->KeyFramesInMap() << std::endl;
-        std::cout << " MapPointsInMap : " << mpMap->MapPointsInMap() << std::endl;
-
-        // cv::waitKey();
-        
-        // Storage Map info
-        // for (size_t i = 0; i < AllMpptr.size(); i++)
-        // {
-        //     DB->Landmarks[i].x = (AllMpptr[i]->GetWorldPos()).at<float>(0, 0);
-        //     DB->Landmarks[i].y = (AllMpptr[i]->GetWorldPos()).at<float>(1, 0);
-        //     DB->Landmarks[i].z = (AllMpptr[i]->GetWorldPos()).at<float>(2, 0);
-        //     DB->Descriptors.push_back(AllMpptr[i]->GetDescriptor());
-        //     std::cout << AllMpptr[i]->mnId << std::endl;
-        // }
-        // cv::waitKey();
-        // Storage KF info
-        // for (size_t i = 0; i < AllMpptr.size(); i++)
-        // {
-
-        //     std::map<ORB_SLAM2::KeyFrame *, size_t> Observations = AllMpptr[i]->GetObservations();
-        //     for (std::map<ORB_SLAM2::KeyFrame *, size_t>::iterator Iter = Observations.begin(); Iter != Observations.end(); ++Iter)
-        //     {
-        //         int KFid = Iter->first->mnId;
-        //         DB->KFtoMPIdx[KFid].push_back(i);
-        //         int KeypointIdx = Iter->second;
-        //         cv::KeyPoint Point2d = Iter->first->mvKeys[KeypointIdx];
-        //         DB->KeyPointInMap[KFid].push_back(Point2d);
-        //     }
-        // }
-
         int MaxMapId = 0;
         for (size_t i = 0; i < AllKFptr.size(); i++)
         {
-            DB->timestamps.push_back(AllKFptr[i]->mTimeStamp);
-            DB->LeftKFimg.push_back(AllKFptr[i]->LeftImg);
-            DB->RightKFimg.push_back(AllKFptr[i]->RightImg);
+            OriginalDB->timestamps.push_back(AllKFptr[i]->mTimeStamp);
+            OriginalDB->LeftKFimg.push_back(AllKFptr[i]->LeftImg);
+            OriginalDB->RightKFimg.push_back(AllKFptr[i]->RightImg);
             
             // std::cout <<  DB->KeyPointInMap[i].size() << "  " << DB->KFtoMPIdx[i].size() << std::endl;
             std::set<MapPoint*> KFMapPoints = AllKFptr[i]->GetMapPoints();
@@ -655,7 +650,7 @@ namespace ORB_SLAM2
                 
                 int KeypointIdx = j->GetIndexInKeyFrame(AllKFptr[i]);
                 cv::KeyPoint Point2d = AllKFptr[i]->mvKeys[KeypointIdx];
-                DB->KeyPointInMap[i].push_back(Point2d);
+                OriginalDB->KeyPointInMap[i].push_back(Point2d);
                 
                 cv::Point3f mp;
                 mp.x = (j->GetWorldPos()).at<float>(0, 0);
@@ -664,8 +659,8 @@ namespace ORB_SLAM2
 
                 bool InKF = false;
                 int Mpid = 0;
-                for(int k = 0; k < DB->Landmarks.size(); k++){
-                    if(mp == DB->Landmarks[k]){
+                for(int k = 0; k < OriginalDB->Landmarks.size(); k++){
+                    if(mp == OriginalDB->Landmarks[k]){
                         InKF = true;
                         Mpid = k;
                     }
@@ -674,17 +669,17 @@ namespace ORB_SLAM2
 
                 if(InKF){
                     // std::cout << "Already In DB " << std::endl;
-                    DB->KFtoMPIdx[i].push_back(Mpid);
+                    OriginalDB->KFtoMPIdx[i].push_back(Mpid);
                 }
                 else{
-                    DB->Landmarks[MaxMapId] = mp;
-                    DB->Descriptors.push_back(j->GetDescriptor());
-                    DB->KFtoMPIdx[i].push_back(MaxMapId);
+                    OriginalDB->Landmarks[MaxMapId] = mp;
+                    OriginalDB->Descriptors.push_back(j->GetDescriptor());
+                    OriginalDB->KFtoMPIdx[i].push_back(MaxMapId);
                     MaxMapId++;
                 }
             }
         }
-        std::cout << "  DB landmark num : " << DB->Landmarks.size() << std::endl;
+        std::cout << "  DB landmark num : " << OriginalDB->Landmarks.size() << std::endl;
                 
         // Saved DataBase to Binary file
         std::ofstream out(filepath, std::ios_base::binary);
@@ -694,10 +689,11 @@ namespace ORB_SLAM2
             exit(-1);
         }
         boost::archive::binary_oarchive oa(out, boost::archive::no_header);
-        oa << DB;
+        oa << OriginalDB;
         out.close();
     }
-                
+
+       
                
         
 
