@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     initialize_window();
     
     
-    int nFeatures = 8000;
+    int nFeatures = 4000;
     float scaleFactor = 1.2;
     int nlevels = 8;
     int iniThFAST = 20;
@@ -110,15 +110,15 @@ int main(int argc, char **argv)
 
     // Save PnPinlier result
     ofstream file;
-    file.open("Kitti08_VPStest_20%_PnP_Result.txt");
+    file.open("Kitti08_VPStest_70%_PnP_Result.txt");
 
     // Save trajectory result
     ofstream traj_file;
-    traj_file.open("Kitti08_VPStest_20%_Pose_result.txt");
+    traj_file.open("Kitti08_VPStest_70%_Pose_result.txt");
 
     // test file result
     ofstream test_file;
-    test_file.open("Kitti08_test_20%_Result.txt");
+    test_file.open("Kitti08_test_70%_Result.txt");
 
     time_t start = time(NULL);
     
@@ -166,14 +166,16 @@ int main(int argc, char **argv)
         // "       word num : " << ret[0].nWords << std::endl;
         // VPStest.SetCandidateKFid(ret);
 
-        int DBoW2Result_KF_imageNum = VPStest.FindKFImageNum((int)ret[0].Id, DB, timestamps);
-        std::cout << "DBoW2Result KF image Num :  " << DBoW2Result_KF_imageNum << std::endl;        
 
         // FindReferenceKF
         std::cout << "Find Reference Keyframe !! " << std::endl;
-        // int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints);
-        int ReferenceKFId = ret[0].Id;
+        VPStest.SetCandidateKFid(ret);
+        int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints);
+        // int ReferenceKFId = ret[0].Id;
         std::cout << " Selected Keyframe num : " << ReferenceKFId << std::endl;
+        
+        int DBoW2Result_KF_imageNum = VPStest.FindKFImageNum(ReferenceKFId, DB, timestamps);
+        std::cout << "DBoW2Result KF image Num :  " << DBoW2Result_KF_imageNum << std::endl;        
         
         // For Draw image 
         int Selected_KF_imageNum = VPStest.FindKFImageNum(ReferenceKFId, DB, timestamps);

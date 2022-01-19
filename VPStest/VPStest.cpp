@@ -44,7 +44,7 @@ std::vector<cv::DMatch> VPStest::ORBDescriptorMatch(cv::Mat queryDescriptor, cv:
 void VPStest::SetCandidateKFid(DBoW2::QueryResults ret)
 {
     CandidateKFid.clear();
-    for(int i = 0; i < ret.size(); i++){
+    for(int i = 0; i < 10; i++){
         CandidateKFid.push_back(ret[i].Id);
     }
 }
@@ -55,7 +55,7 @@ double VPStest::PnPInlierRatio(int KFid)
 {
     cv::Mat R, T, RT, inliers;
     // std::cout << MatchDB3dPoints[KFid].size() << "  " << MatchQ2dPoints[KFid].size() << std::endl;
-    cv::solvePnPRansac(MatchDB3dPoints[KFid], MatchQ2dPoints[KFid], K, cv::noArray(), R, T, true, 100, 3.0F, 0.99, inliers, 0 );
+    cv::solvePnPRansac(MatchDB3dPoints[KFid], MatchQ2dPoints[KFid], K, cv::noArray(), R, T, true, 300, 3.0F, 0.99, inliers, 0 );
     double PnPInlierRatio = (double)inliers.rows / (double)MatchDB3dPoints[KFid].size();
 
     return PnPInlierRatio;
@@ -98,6 +98,8 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
     }
 
     std::vector<double> PnPinlierRatios_(PnPinlierRatios);
+    for(int i = 0; i < PnPinlierRatios.size(); i++) std::cout << PnPinlierRatios[i] << "  ";
+    std::cout << std::endl;
     std::sort(PnPinlierRatios.begin(), PnPinlierRatios.end());
     auto it = find(PnPinlierRatios_.begin(), PnPinlierRatios_.end(), PnPinlierRatios.back());
     int index = it - PnPinlierRatios_.begin();
