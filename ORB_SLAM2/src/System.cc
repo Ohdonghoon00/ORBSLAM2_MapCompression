@@ -721,7 +721,17 @@ namespace ORB_SLAM2
         //     std::cout << std::endl;
         // }
         std::cout << "  DB landmark num : " << OriginalDB->Landmarks.size() << std::endl;
-        std::cout << OriginalDB->GetObservationCount(5) << std::endl;
+        std::cout << "  DB descriptor num : " << OriginalDB->Descriptors.size() << std::endl;
+        std::cout << "  DB timestamp num : " << OriginalDB->timestamps.size() << std::endl;
+        std::cout << "  DB left img num : " << OriginalDB->LeftKFimg.size() << std::endl;
+        std::cout << "  DB right img num : " << OriginalDB->RightKFimg.size() << std::endl;
+
+        std::cout << "  DB kf(kf to map idx) num : " << OriginalDB->KFtoMPIdx.size() << std::endl;
+        std::cout << "  DB kf(in map) num : " << OriginalDB->KeyPointInMap.size() << std::endl;
+
+        // std::cout << "  DB (kf to map idx) 2d num : " << OriginalDB->Landmarks.size() << std::endl;
+        // std::cout << "  DB (in map) 2d num : " << OriginalDB->Landmarks.size() << std::endl;
+        // std::cout << OriginalDB->GetObservationCount(5) << std::endl;
         // Saved DataBase to Binary file
         std::ofstream out(filepath, std::ios_base::binary);
         if (!out)

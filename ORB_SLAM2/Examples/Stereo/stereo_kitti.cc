@@ -135,37 +135,37 @@ int main(int argc, char **argv)
 
     
     // Save camera trajectory
-    SLAM.SaveTrajectoryKITTI("Kitti08_Trajectory.txt");
+    SLAM.SaveTrajectoryKITTI("Kitti02_Trajectory.txt");
 
     // Save in Original Database.h
-    SLAM.SaveOriginalDataBase("Kitti08_DB_original.bin");
+    SLAM.SaveOriginalDataBase("Kitti02_DB_original.bin");
     
     // Map Compression
-    SLAM.MapCompression2(0.7, "Kitti08_DB_70%.bin");
+    SLAM.MapCompression2(0.7, "Kitti02_DB_70%.bin");
 
     // Save in Compressed Database.h
-    // SLAM.SaveDataBase("Kitti08_DB_70%.bin"); // 0.7
+    // SLAM.SaveDataBase("Kitti02_DB_70%.bin"); // 0.7
 
     // Map Compression
-    SLAM.MapCompression2(0.5, "Kitti08_DB_50%.bin");
+    SLAM.MapCompression2(0.5, "Kitti02_DB_50%.bin");
 
     // Save in Compressed Database.h
-    // SLAM.SaveDataBase("Kitti08_DB_50%.bin"); // 0.7 * 0.7 = 0.49
+    // SLAM.SaveDataBase("Kitti02_DB_50%.bin"); // 0.7 * 0.7 = 0.49
 
     // Map Compression
-    SLAM.MapCompression2(0.35, "Kitti08_DB_35%.bin");
+    SLAM.MapCompression2(0.35, "Kitti02_DB_35%.bin");
 
     // Save in Compressed Database.h
-    // SLAM.SaveDataBase("Kitti08_DB_35%.bin"); // 0.7 ^ 3 = 0.343
+    // SLAM.SaveDataBase("Kitti02_DB_35%.bin"); // 0.7 ^ 3 = 0.343
 
     // Map Compression
-    SLAM.MapCompression2(0.2, "Kitti08_DB_20%.bin");
+    SLAM.MapCompression2(0.2, "Kitti02_DB_20%.bin");
 
     // Save in Compressed Database.h
-    // SLAM.SaveDataBase("Kitti08_DB_20%.bin"); // 0.343 * 0.6 = 0.2058
+    // SLAM.SaveDataBase("Kitti02_DB_20%.bin"); // 0.343 * 0.6 = 0.2028
 
     // Save Timestamp + Trajectory result to # time tx ty tz qx qy qz qw
-    SLAM.SavePose("Kitti08_DB_Trajectory_result.txt");
+    SLAM.SavePose("Kitti02_DB_Trajectory_result.txt");
 
    
 
@@ -201,8 +201,8 @@ void LoadImages(const string &strPathToSequence, vector<string> &vstrImageLeft,
     string strPrefixLeft = strPathToSequence + "/image_0/";
     string strPrefixRight = strPathToSequence + "/image_1/";
 
-    // const int nTimes = vTimestamps.size();
-    const int nTimes = 30;
+    const int nTimes = vTimestamps.size();
+    // const int nTimes = 30;
 
     vstrImageLeft.resize(nTimes);
     vstrImageRight.resize(nTimes);
