@@ -28,7 +28,8 @@ add_library(Lib SHARED
 VPStest.cpp
 DataBase.cpp
 ORBextractor.cc
-map_viewer.cpp )
+map_viewer.cpp
+VPStestResult.cpp )
 
 target_link_libraries(Lib
   
@@ -73,14 +74,19 @@ Evaluation.cpp
 )
 target_link_libraries(Evaluation Lib)
 
-# add_executable(dbow2test
-# dbow2test.cpp
+add_executable(LoadResult
+LoadResult.cpp
 
-# )
+)
 
-# target_link_libraries(dbow2test Lib)
+target_link_libraries(LoadResult Lib)
 
+add_executable(Evaluation_euroc
+Evaluation_euroc.cpp
 
+)
+
+target_link_libraries(Evaluation_euroc Lib)
 
 
 

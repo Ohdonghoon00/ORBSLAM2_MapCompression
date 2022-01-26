@@ -31,13 +31,13 @@ int main(int argc, char **argv)
     std::vector<Eigen::VectorXf> LcamGTPose, RcamGTPose;
     std::vector<Eigen::VectorXf> EstimatedPose;
 
-    // Save PnPinlier result
-    ofstream SelectedGTPose_file;
-    SelectedGTPose_file.open("SelectedGTPose_original_result.txt");
+    // error
+    ofstream TraslationError;
+    TraslationError.open("Kitti00_TraslationError_20%_result.txt");
 
     // Save trajectory result
-    ofstream SelectedEsPose_file;
-    SelectedEsPose_file.open("SelectedEsPose_original_result.txt");
+    // ofstream ;
+    // SelectedGTPose_file.open("SelectedGTPose_original_result.txt");
 
     // Load GT Pose 
     ifstream s_;
@@ -82,44 +82,26 @@ int main(int argc, char **argv)
         p <<    std::stof(values[1]), std::stof(values[2]), std::stof(values[3]), 
                 std::stof(values[4]), std::stof(values[5]), std::stof(values[6]), std::stof(values[7]);
         EstimatedPose.push_back(p);
-        timestamps.push_back(std::stod(values[0]));    
+        // timestamps.push_back(std::stod(values[0]));    
 
     }
     s.close();
     
     // RMS ERROR
     std::cout << " ATE ... " << std::endl;
-    float ATE_RMS_error = AbsoluteTrajectoryError(RcamGTPose, EstimatedPose);
+    float ATE_RMS_error = AbsoluteTrajectoryError(LcamGTPose, EstimatedPose);
     std::cout << " RPE ... " << std::endl;
-    float RPE_RMS_error = RelativePoseError(RcamGTPose, EstimatedPose);
+    float RPE_RMS_error = RelativePoseError(LcamGTPose, EstimatedPose);
 
-    // Write txt
-    int count = 0;
-    int Posethres = 1;
-    // for(int i = 0; i < timestamps.size(); i++){
-        
+    TranslationError(LcamGTPose, EstimatedPose, TraslationError);
 
 
-    //     if(std::abs(RcamGTPose[i](2) - EstimatedPose[i](2)) < Posethres && std::abs(RcamGTPose[i](0) - EstimatedPose[i](0)) < Posethres && std::abs(RcamGTPose[i](1) - EstimatedPose[i](1)) < Posethres){
-            
-            
-    //         SelectedGTPose_file << timestamps[i] << " " << RcamGTPose[i](0) << " " << RcamGTPose[i](1) << " " << RcamGTPose[i](2) << " "
-    //         << RcamGTPose[i](3) << " " << RcamGTPose[i](4) << " " << RcamGTPose[i](5) << " " << RcamGTPose[i](6) << std::endl;
-            
-    //         SelectedEsPose_file << timestamps[i] << " " << EstimatedPose[i](0) << " " << EstimatedPose[i](1) << " " << EstimatedPose[i](2) << " "
-    //         << EstimatedPose[i](3) << " " << EstimatedPose[i](4) << " " << EstimatedPose[i](5) << " " << EstimatedPose[i](6) << std::endl;            
-            
-    //         count++;
 
-    //     }
-
-    // }
-// std::cout << count << std::endl;
 std::cout << ATE_RMS_error << std::endl;
 std::cout << RPE_RMS_error << std::endl;
 
-    SelectedGTPose_file.close();
-    SelectedEsPose_file.close();
+    TraslationError.close();
+    // SelectedEsPose_file.close();
     
     return 0;
 }

@@ -19,7 +19,7 @@ void initialize_window();
 void show_trajectory(const GLdouble &x, const GLdouble &y, const GLdouble &z, const double r, const double g, const double b, const double size);
 
 
-void show_trajectory_keyframe(Eigen::Matrix4f rt, const double r, const double g, const double b, const double LineSize, const float TriangleSize);
+void show_trajectory_keyframe(Eigen::Matrix4d rt, const double r, const double g, const double b, const double LineSize, const float TriangleSize);
 
 
 // void show_trajectory_left_keyframe_mini(const GLdouble &x, const GLdouble &y, const GLdouble &z, const double r, const double g, const double b, const double size);

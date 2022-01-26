@@ -30,11 +30,11 @@ float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen
 {
     float RMS_Error(0.0);
     int count = 0;
-    float Posethres = 0.3;
+    float Posethres = 0.5;
     for(int i = 0; i < GT.size(); i++){
         
         if(ISNaN(Es[i]) == false){
-            std::cout << Es[i](0) << std::endl;
+            // std::cout << Es[i](0) << std::endl;
             std::cout << count << std::endl;
             
             continue;
@@ -80,8 +80,8 @@ float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen
 
         }    
         else{
-            std::cout << " failure image Num  : ";
-            std::cout << i + 1 << " ";
+        //     // std::cout << " failure image Num  : ";
+        //     // std::cout << i + 1 << " ";
         }
     }
     float RMS_Error_ = std::sqrt(RMS_Error / count);
@@ -94,15 +94,15 @@ float RelativePoseError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::Vect
     float RMS_Error(0.0);
     int count = 0;
     int lastindex(0), currindex(0);
-    float Posethres = 0.3;
+    float Posethres = 0.5;
 
     for(int i = 0; i < GT.size(); i++){
         
         if(std::abs(GT[i](2) - Es[i](2)) < Posethres && std::abs(GT[i](0) - Es[i](0)) < Posethres && std::abs(GT[i](1) - Es[i](1)) < Posethres){
  
         if(ISNaN(Es[i]) == false){
-            std::cout << Es[i](0) << std::endl;
-            std::cout << count << std::endl;
+            // std::cout << Es[i](0) << std::endl;
+            // std::cout << count << std::endl;
             
             continue;
         }
@@ -236,4 +236,63 @@ Eigen::VectorXf LeftCamToRightCam(Eigen::VectorXf Leftcam)
                 RightCam_q.x(), RightCam_q.y(), RightCam_q.z(), RightCam_q.w();
 
     return Rightcam;
+}
+
+void TranslationError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::VectorXf> Es, std::ofstream &filepath)
+{
+    int count = 0;
+    float Posethres = 0.3;
+    for(int i = 0; i < GT.size(); i++){
+        
+        if(ISNaN(Es[i]) == false){
+            std::cout << Es[i](0) << std::endl;
+            std::cout << count << std::endl;
+            
+            continue;
+        }
+        Eigen::Quaternionf GT_q;
+        Eigen::Quaternionf Es_q;
+
+        GT_q.x() = GT[i](3);
+        GT_q.y() = GT[i](4);
+        GT_q.z() = GT[i](5);
+        GT_q.w() = GT[i](6);
+        Eigen::Matrix3f GT_R = GT_q.normalized().toRotationMatrix();
+        
+        Es_q.x() = Es[i](3);
+        Es_q.y() = Es[i](4);
+        Es_q.z() = Es[i](5);
+        Es_q.w() = Es[i](6);
+        Eigen::Matrix3f Es_R = Es_q.normalized().toRotationMatrix();
+
+        Eigen::Matrix4f GTMotion;
+        GTMotion << GT_R(0, 0), GT_R(0, 1), GT_R(0, 2), GT[i](0),
+                    GT_R(1, 0), GT_R(1, 1), GT_R(1, 2), GT[i](1),
+                    GT_R(2, 0), GT_R(2, 1), GT_R(2, 2), GT[i](2),
+                    0, 0, 0, 1;
+        
+        Eigen::Matrix4f EsMotion;
+        EsMotion << Es_R(0, 0), Es_R(0, 1), Es_R(0, 2), Es[i](0),
+                    Es_R(1, 0), Es_R(1, 1), Es_R(1, 2), Es[i](1),
+                    Es_R(2, 0), Es_R(2, 1), Es_R(2, 2), Es[i](2),
+                    0, 0, 0, 1;        
+    
+            
+        Eigen::Matrix4f RelativePose = GTMotion.inverse() * EsMotion;
+        Eigen::Vector3f RelativeTrans;
+        RelativeTrans << std::abs(RelativePose(0, 3)), std::abs(RelativePose(1, 3)), std::abs(RelativePose(2, 3));
+        double XYZError = std::sqrt(RelativeTrans.dot(RelativeTrans));
+
+        if(XYZError < 0.5) count++;
+
+        filepath << XYZError << std::endl;
+            
+        
+
+
+   
+
+    }
+    std::cout << (double)GT.size() << std::endl;
+    std::cout << "success ratio : " << (double)count / (double)GT.size() << std::endl;
 }

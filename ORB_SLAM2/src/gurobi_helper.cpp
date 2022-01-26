@@ -86,14 +86,14 @@ Eigen::MatrixXd CalculateVisibilityMatrix2(DataBase* DB)
     Eigen::MatrixXd A(KeyframeNum, PointCloudNum_); 
     A.setZero();
     for(int i = 0; i < DB->KFtoMPIdx.size(); i++ )
+    {
+        for(int j = 0; j < DB->KFtoMPIdx[i].size(); j++)
         {
-            for(int j = 0; j < DB->KFtoMPIdx[i].size(); j++)
-            {
-                int idx = DB->KFtoMPIdx[i][j];
-                A(i, idx) = 1.0;
-            }
-
+            int idx = DB->KFtoMPIdx[i][j];
+            A(i, idx) = 1.0;
         }
+
+    }
     return A;
 }
                 
@@ -132,30 +132,34 @@ std::cout << totalNum << std::endl;
 
 void AddConstraint2(DataBase* DB, GRBModel& model_, Eigen::MatrixXd A, std::vector<GRBVar> x, double CompressionRatio)
 {
-    GRBLinExpr MinKeyframePointNum = 0;
+    
     GRBLinExpr TotalPointNum = 0;
+    GRBLinExpr MinKeyframePointNum = 0;
 
     double b = 30.0; // Minimum point num by one Keyframe
     // double CompressionRatio = 0.7; // Compression Ratio to Landmarks
     
-    int PointCloudNum_ = DB->Landmarks.size();
+    double PointCloudNum_ = (double)DB->Landmarks.size();
     int KeyframeNum = DB->KFtoMPIdx.size();
     
     double totalNum = (double)(int)(PointCloudNum_ * CompressionRatio);
 std::cout << "Total Landmark num after compression  : " << totalNum << std::endl;
     for(int i = 0; i < KeyframeNum; i++)
     {
+       
+       double MaxPointNumInKeyframe = (double)DB->KFtoMPIdx[i].size();
        MinKeyframePointNum.clear();
-       for(int j = 0; j < PointCloudNum_; j++)
+       for(int j = 0; j < (int)PointCloudNum_; j++)
        {
         
             MinKeyframePointNum += A(i, j) * x[j];
 
        }
+       if(MaxPointNumInKeyframe < b) b = MaxPointNumInKeyframe;
        model_.addConstr(MinKeyframePointNum >= b);
-
+       b = 30.0;
     }
-    for(int i = 0; i < PointCloudNum_; i++){
+    for(int i = 0; i < (int)PointCloudNum_; i++){
 
         TotalPointNum = TotalPointNum + x[i];
     }

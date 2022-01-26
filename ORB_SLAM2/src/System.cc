@@ -677,11 +677,13 @@ namespace ORB_SLAM2
             
             // std::cout <<  DB->KeyPointInMap[i].size() << "  " << DB->KFtoMPIdx[i].size() << std::endl;
             std::set<MapPoint*> KFMapPoints = AllKFptr[i]->GetMapPoints();
-            // std::cout << "KF num : " << i << " map points num : " << KFMapPoints.size() << std::endl;
+            std::cout << "KF num : " << i << " map points num : " << KFMapPoints.size() << std::endl;
+            
             for(auto j : KFMapPoints){
 
                 
                 int KeypointIdx = j->GetIndexInKeyFrame(AllKFptr[i]);
+                if(KeypointIdx == -1) continue;
                 cv::KeyPoint Point2d = AllKFptr[i]->mvKeys[KeypointIdx];
                 OriginalDB->KeyPointInMap[i].push_back(Point2d);
                 
@@ -711,6 +713,7 @@ namespace ORB_SLAM2
                     MaxMapId++;
                 }
             }
+            // cv::waitKey();
         }
         // for(size_t i = 0; i < OriginalDB->KFtoMPIdx.size(); i++){
         //     std::cout << "KF num : " << i << std::endl;
@@ -721,11 +724,10 @@ namespace ORB_SLAM2
         //     std::cout << std::endl;
         // }
         std::cout << "  DB landmark num : " << OriginalDB->Landmarks.size() << std::endl;
-        std::cout << "  DB descriptor num : " << OriginalDB->Descriptors.size() << std::endl;
-        std::cout << "  DB timestamp num : " << OriginalDB->timestamps.size() << std::endl;
-        std::cout << "  DB left img num : " << OriginalDB->LeftKFimg.size() << std::endl;
-        std::cout << "  DB right img num : " << OriginalDB->RightKFimg.size() << std::endl;
 
+        for(int i = 0; i < OriginalDB->KFtoMPIdx.size(); i++){
+            std::cout << " kf num : " << i << " point num : " << OriginalDB->KFtoMPIdx[i].size() << std::endl;
+        }
         std::cout << "  DB kf(kf to map idx) num : " << OriginalDB->KFtoMPIdx.size() << std::endl;
         std::cout << "  DB kf(in map) num : " << OriginalDB->KeyPointInMap.size() << std::endl;
 

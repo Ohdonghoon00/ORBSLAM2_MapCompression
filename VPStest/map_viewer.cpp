@@ -31,23 +31,23 @@ void show_trajectory(const GLdouble &x, const GLdouble &y, const GLdouble &z, co
     glColor3f(r,g,b);
     glPointSize(size);
     glBegin(GL_POINTS);
-    glVertex3d(x*0.0025, z*0.0025 - 0.35, y*-0.0025);
+    glVertex3d(x*0.01, z*0.01 - 0.35, y*-0.01);
     glEnd();
 }
 
-void show_trajectory_keyframe(Eigen::Matrix4f rt, const double r, const double g, const double b, const double LineSize, const float TriangleSize)
+void show_trajectory_keyframe(Eigen::Matrix4d rt, const double r, const double g, const double b, const double LineSize, const float TriangleSize)
 {
     glColor3f(r,g,b);
     glLineWidth(LineSize);
     glBegin(GL_LINE_LOOP);
-    Eigen::Matrix<float, 3, 3> R = rt.block<3, 3>(0, 0);
-    Eigen::Matrix<float, 3, 1> T = rt.block<3, 1>(0, 3);
-    Eigen::Matrix<float, 3, 3> B;
+    Eigen::Matrix<double, 3, 3> R = rt.block<3, 3>(0, 0);
+    Eigen::Matrix<double, 3, 1> T = rt.block<3, 1>(0, 3);
+    Eigen::Matrix<double, 3, 3> B;
     B <<    0, -TriangleSize, TriangleSize,
             0,             0,            0,
             0, -TriangleSize, -TriangleSize; 
 
-    Eigen::Matrix<float, 3, 3> rb = R * B;
+    Eigen::Matrix<double, 3, 3> rb = R * B;
     rb.col(0) = rb.col(0) + T;
     rb.col(1) = rb.col(1) + T;
     rb.col(2) = rb.col(2) + T;
@@ -55,7 +55,7 @@ void show_trajectory_keyframe(Eigen::Matrix4f rt, const double r, const double g
     for(int i = 0 ; i < 3; i++)
     {
         GLdouble x(rb(0, i)), y(rb(1, i)), z(rb(2, i));
-        glVertex3d(x*0.0025, z*0.0025 - 0.35, y*-0.0025);
+        glVertex3d(x*0.01, z*0.01 - 0.35, y*-0.01);
     }    
     
     // glVertex3d(x*0.003, z*0.003 - 0.8, y*-0.003);

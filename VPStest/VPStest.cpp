@@ -44,7 +44,7 @@ std::vector<cv::DMatch> VPStest::ORBDescriptorMatch(cv::Mat queryDescriptor, cv:
 void VPStest::SetCandidateKFid(DBoW2::QueryResults ret)
 {
     CandidateKFid.clear();
-    for(int i = 0; i < 10; i++){
+    for(int i = 0; i < 8; i++){
         CandidateKFid.push_back(ret[i].Id);
     }
 }
@@ -110,7 +110,7 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
 
 }
 
-double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, int KFid, Eigen::Matrix4f &Pose, cv::Mat &Inliers, std::vector<cv::DMatch> &GoodMatches_)
+double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, int KFid, Eigen::Matrix4d &Pose, cv::Mat &Inliers, std::vector<cv::DMatch> &GoodMatches_)
 {
     std::vector<cv::DMatch> Matches;
     std::vector<cv::Point3f> Match3dpts;
