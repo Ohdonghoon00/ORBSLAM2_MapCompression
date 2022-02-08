@@ -55,7 +55,7 @@ double VPStest::PnPInlierRatio(int KFid)
 {
     cv::Mat R, T, RT, inliers;
     // std::cout << MatchDB3dPoints[KFid].size() << "  " << MatchQ2dPoints[KFid].size() << std::endl;
-    cv::solvePnPRansac(MatchDB3dPoints[KFid], MatchQ2dPoints[KFid], K, cv::noArray(), R, T, true, 300, 3.0F, 0.99, inliers, 0 );
+    cv::solvePnPRansac(MatchDB3dPoints[KFid], MatchQ2dPoints[KFid], K, cv::noArray(), R, T, false, 300, 3.0F, 0.99, inliers, 0 );
     double PnPInlierRatio = (double)inliers.rows / (double)MatchDB3dPoints[KFid].size();
 
     return PnPInlierRatio;
