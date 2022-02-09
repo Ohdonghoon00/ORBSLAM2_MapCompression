@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     ia >> VPStestResult;
     in.close();
 
-    int num = 532;
+    int num = std::stoi(argv[2]);
 
     cv::Mat MatchImg = VPStestResult->MatchingImg[num];
     cv::imshow("MatchImg", MatchImg); 

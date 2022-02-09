@@ -39,7 +39,8 @@ int main(int argc, char **argv)
     int iniThFAST = 20;
     int minThFAST = 7;
     VPStest VPStest(4000);
-    ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
+    ORBextractor ORBfeatureAndDescriptorDBOW2(4000, scaleFactor, nlevels, iniThFAST, minThFAST);
+    ORBextractor ORBfeatureAndDescriptorP3P(4000, scaleFactor, nlevels, iniThFAST, minThFAST);
     
     VPStestResult* SaveVPStestResult;
     SaveVPStestResult = new VPStestResult();
@@ -96,7 +97,7 @@ int main(int argc, char **argv)
         // cv::Mat DB_image = cv::imread(DBimagePath.str(), cv::ImreadModes::IMREAD_GRAYSCALE);
         cv::Mat mask_, QDescriptors_;
         std::vector<cv::KeyPoint> QKeypoints_;
-        ORBfeatureAndDescriptor(DB_image, mask_, QKeypoints_, QDescriptors_);        
+        ORBfeatureAndDescriptorDBOW2(DB_image, mask_, QKeypoints_, QDescriptors_);        
         std::vector<cv::Mat> DBDescriptors = MatToVectorMat(QDescriptors_);
         db.add(DBDescriptors);
     }
@@ -150,7 +151,7 @@ int main(int argc, char **argv)
         if(it != DB->timestamps.end()){
             cv::Mat mask, QDescriptors;
             std::vector<cv::KeyPoint> QKeypoints;
-            ORBfeatureAndDescriptor(QueryImg, mask, QKeypoints, QDescriptors);
+            ORBfeatureAndDescriptorP3P(QueryImg, mask, QKeypoints, QDescriptors);
 
             // Place Recognition
             QueryResults ret;
@@ -185,9 +186,13 @@ int main(int argc, char **argv)
             double PnPInlierRatio = VPStest.VPStestToReferenceKF(DB, QDescriptors, QKeypoints, ReferenceKFId, Pose, Inliers, Matches);
             std::cout << " PnPInlier Ratio of Selected Keyframe : " << PnPInlierRatio << std::endl;
             Eigen::Quaterniond q = ToQuaternion(Pose);
-            // Vector6d poseresult = To6DOF(Pose);
-
-        
+            
+            // std::cout << "ReprojectioErr : ";
+            // for(int i = 0; i < ReprojectionErr.size(); i++){
+            //     std::cout << ReprojectionErr[i] << "  ";
+            // }
+            // std::cout << std::endl;
+            
             std::cout << " Same As DataBase timestamp !!!  " << std::endl;            
                 traj_file <<    timestamps[image_num] << " " << Pose(0, 3) << " " << Pose(1, 3) << " " << Pose(2, 3) << 
                 " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
@@ -237,7 +242,9 @@ int main(int argc, char **argv)
             SaveVPStestResult->PnPInlierRatio[KF_Img_Num] = PnPInlierRatio;
             SaveVPStestResult->PnPInliers[KF_Img_Num] = Inliers.rows;
             SaveVPStestResult->DBoW2ResultImgNum[KF_Img_Num] = Selected_KF_imageNum;
-            SaveVPStestResult->KFimageNum.push_back(KF_Img_Num);
+            // SaveVPStestResult->Inliers[KF_Img_Num] = Inliers;
+            // SaveVPStestResult->ReprojectionErr.push_back(ReprojectionErr);
+            // SaveVPStestResult->KFimageNum.push_back(KF_Img_Num);
             KF_Img_Num++;
             // cv::waitKey();
         }

@@ -170,6 +170,7 @@ int main(int argc, char **argv)
         Eigen::Matrix4d Pose;
         cv::Mat Inliers;
         std::vector<cv::DMatch> Matches;
+        // std::vector<float> ReprojectionErr;
         double PnPInlierRatio = VPStest.VPStestToReferenceKF(DB, QDescriptors, QKeypoints, ReferenceKFId, Pose, Inliers, Matches);
         std::cout << " PnPInlier Ratio of Selected Keyframe : " << PnPInlierRatio << std::endl;
         Eigen::Quaterniond q = ToQuaternion(Pose);

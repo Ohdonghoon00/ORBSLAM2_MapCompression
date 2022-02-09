@@ -54,6 +54,13 @@ add_executable(VPStest_kitti
 )
 target_link_libraries(VPStest_kitti Lib)
 
+# Kitti_query_one_image
+add_executable(main_kitti_query_one_image
+main_kitti_query_one_image.cpp
+
+)
+target_link_libraries(main_kitti_query_one_image Lib)
+
 # Euroc
 add_executable(VPStest_euroc
   main_euroc.cpp

@@ -22,6 +22,8 @@ public:
     // std::map< int, Vector6d > PnPpose;
     std::map< int, double > PnPInlierRatio;
     std::map< int, int > PnPInliers;
+    std::vector<std::vector<float>> ReprojectionErr;
+    std::map<int, cv::Mat> Inliers;
 
     // Place Recognition
     std::map< int, int > DBoW2ResultImgNum;

@@ -8,6 +8,8 @@ void VPStestResult::serialize(Archive &ar, const unsigned int version)
         ar & PnPInlierRatio;
         ar & PnPInliers;
         ar & DBoW2ResultImgNum;
+        // ar & Inliers;
+        // ar & ReprojectionErr;
         // ar & KFimageNum;
 
 }

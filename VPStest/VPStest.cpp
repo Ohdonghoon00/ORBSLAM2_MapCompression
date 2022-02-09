@@ -61,11 +61,46 @@ double VPStest::PnPInlierRatio(int KFid)
     return PnPInlierRatio;
 }
 
+std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose)
+{
+    Eigen::Matrix4Xf WorldPoints = HomogeneousForm(WPts);
+    Eigen::Matrix3Xf ImagePoints = HomogeneousForm(ImgPts);
+
+    Eigen::Matrix3Xf ReprojectPoints(3, WorldPoints.cols());
+    Pose = Pose.inverse();
+    Eigen::Matrix4f Pose_ = Pose.cast<float>();
+    Eigen::Matrix<float, 3, 4> PoseRT;
+    PoseRT = Pose_.block<3, 4>(0, 0);
+    Eigen::MatrixXf K_ = Mat2Eigen(K);
+    ReprojectPoints = PoseRT * WorldPoints;
+    for(int i = 0; i < ReprojectPoints.cols(); i++){
+        ReprojectPoints(0, i) /= ReprojectPoints(2, i);
+        ReprojectPoints(1, i) /= ReprojectPoints(2, i);
+        ReprojectPoints(2, i) /= ReprojectPoints(2, i);
+    }
+    ReprojectPoints = K_ * ReprojectPoints;
+    // for(int i = 0; i < ReprojectPoints.cols(); i++){
+    //     std::cout << ReprojectPoints(0, i) << " " << ReprojectPoints(1, i) << " " << ReprojectPoints(2, i);
+    // }
+
+    std::vector<float> ReprojectErr(WorldPoints.cols());
+    for(int i = 0; i < WorldPoints.cols(); i++){
+        ReprojectErr[i] = std::sqrt( (ImagePoints(0, i) - ReprojectPoints(0, i)) * 
+                                     (ImagePoints(0, i) - ReprojectPoints(0, i)) + 
+                                     (ImagePoints(1, i) - ReprojectPoints(1, i)) *
+                                     (ImagePoints(1, i) - ReprojectPoints(1, i)) );
+        // std::cout << ReprojectErr[i] << " ";
+    }
+    std::cout << std::endl;
+
+    return ReprojectErr;
+}
 
 int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints)
 {
     std::map<int, std::vector<cv::DMatch>> MatchResults;
     std::vector<double> PnPinlierRatios;
+    std::vector<int> inlier_nums;
     
     MatchDB3dPoints.clear();
     MatchQ2dPoints.clear();
@@ -92,13 +127,19 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
             cv::Point2f MatchQ2dPoint(QKeypoints[Goodmatches[j].queryIdx].pt);
             MatchQ2dPoints[KFid].push_back(MatchQ2dPoint);
         }
-        double _PnPinlierRatio = PnPInlierRatio(KFid);
-        PnPinlierRatios.push_back(_PnPinlierRatio);
+        cv::Mat R, T, RT, inliers;
+        cv::solvePnPRansac(MatchDB3dPoints[KFid], MatchQ2dPoints[KFid], K, cv::noArray(), R, T, false, 1000, 3.0F, 0.99, inliers, 0 );
+        double _PnPInlierRatio = (double)inliers.rows / (double)MatchDB3dPoints[KFid].size();
+        // double _PnPinlierRatio = PnPInlierRatio(KFid);
+        PnPinlierRatios.push_back(_PnPInlierRatio);
+        inlier_nums.push_back(inliers.rows);
 
     }
 
     std::vector<double> PnPinlierRatios_(PnPinlierRatios);
     for(int i = 0; i < PnPinlierRatios.size(); i++) std::cout << PnPinlierRatios[i] << "  ";
+    std::cout << std::endl;
+    for(int i = 0; i < inlier_nums.size(); i++) std::cout << inlier_nums[i] << "  ";
     std::cout << std::endl;
     std::sort(PnPinlierRatios.begin(), PnPinlierRatios.end());
     auto it = find(PnPinlierRatios_.begin(), PnPinlierRatios_.end(), PnPinlierRatios.back());
@@ -162,7 +203,7 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
 
     cv::Mat R, T, RT;
     double PnPInlierRatio = 0;
-    bool PnPSuccess = cv::solvePnPRansac(Match3dpts, Match2dpts, K, cv::noArray(), R, T, false, 300, 3.0F, 0.99, Inliers, 0 );
+    bool PnPSuccess = cv::solvePnPRansac(Match3dpts, Match2dpts, K, cv::noArray(), R, T, false, 1000, 3.0F, 0.99, Inliers, 0 );
     // inlier_num = Inliers.rows;
     std::cout << " SolvePnP result  : " << PnPSuccess << std::endl;
     
@@ -175,9 +216,11 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
                 0, 0, 0, 1;
         Pose = Pose.inverse();
     
- 
-         
-    
+        // ReprojectionErr = ReprojectionError(Match3dpts, Match2dpts, Pose);
+        // for(int i = 0; i < Inliers.rows; i++){
+        //     int index = Inliers.at<int>(i, 0);
+        //     std::cout << ReprojectionErr[index] << " ";
+        // }
     
     return PnPInlierRatio;
 

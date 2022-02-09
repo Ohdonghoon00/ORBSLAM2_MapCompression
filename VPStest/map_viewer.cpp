@@ -31,7 +31,7 @@ void show_trajectory(const GLdouble &x, const GLdouble &y, const GLdouble &z, co
     glColor3f(r,g,b);
     glPointSize(size);
     glBegin(GL_POINTS);
-    glVertex3d(x*0.01, z*0.01 - 0.35, y*-0.01);
+    glVertex3d(x*0.0025, z*0.0025 - 0.35, y*-0.0025); //0.01
     glEnd();
 }
 
@@ -55,7 +55,7 @@ void show_trajectory_keyframe(Eigen::Matrix4d rt, const double r, const double g
     for(int i = 0 ; i < 3; i++)
     {
         GLdouble x(rb(0, i)), y(rb(1, i)), z(rb(2, i));
-        glVertex3d(x*0.01, z*0.01 - 0.35, y*-0.01);
+        glVertex3d(x*0.0025, z*0.0025 - 0.35, y*-0.0025);
     }    
     
     // glVertex3d(x*0.003, z*0.003 - 0.8, y*-0.003);
