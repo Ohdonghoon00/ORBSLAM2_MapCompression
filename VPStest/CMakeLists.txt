@@ -29,7 +29,8 @@ VPStest.cpp
 DataBase.cpp
 ORBextractor.cc
 map_viewer.cpp
-VPStestResult.cpp )
+VPStestResult.cpp
+utils.cpp )
 
 target_link_libraries(Lib
   

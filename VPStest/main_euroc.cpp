@@ -7,6 +7,7 @@
 #include "ORBextractor.h"
 #include "map_viewer.h"
 #include "VPStestResult.h"
+#include "utils.h"
 
 #include <opencv2/core.hpp>
 #include "opencv2/opencv.hpp"
@@ -42,8 +43,8 @@ int main(int argc, char **argv)
     VPStest VPStest(4000);
     ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
     
-    // VPStestResult* SaveVPStestResult;
-    // SaveVPStestResult = new VPStestResult();
+    VPStestResult* SaveVPStestResult;
+    SaveVPStestResult = new VPStestResult();
     DataBase* DB;
     double duration(0.0), duration_(0.0);
     int image_num = 0;
@@ -116,17 +117,17 @@ int main(int argc, char **argv)
   
     // Save PnPinlier result
     ofstream file;
-    file.open("MH01_MH02_VPStest_35%_PnP_Result.txt");
+    file.open("MH01_MH02_VPStest_original_PnP_Result.txt");
 
     // Save trajectory result
     ofstream traj_file;
-    traj_file.open("MH01_MH02_VPStest_35%_Pose_result.txt");
+    traj_file.open("MH01_MH02_VPStest_original_Pose_result.txt");
 
     // test file result
     ofstream test_file;
-    test_file.open("MH01_MH02_test_35%_Result.txt");
+    test_file.open("MH01_MH02_test_original_Result.txt");
 
-    std::string filepath = "MH01_MH02_VPStest_35%_result.bin";
+    std::string filepath = "MH01_MH02_VPStest_original_result.bin";
 
     time_t start = time(NULL);
     
@@ -217,30 +218,30 @@ int main(int argc, char **argv)
         glFlush();
         
         // Save Result
-        // SaveVPStestResult->MatchingImg[image_num] = MatchImg;
-        // // SaveVPStestResult->PnPpose[image_num] = poseresult;
-        // SaveVPStestResult->PnPInlierRatio[image_num] = PnPInlierRatio;
-        // SaveVPStestResult->PnPInliers[image_num] = Inliers.rows;
-        // SaveVPStestResult->DBoW2ResultImgNum[image_num] = ReferenceKFId;
+        SaveVPStestResult->MatchingImg[image_num] = MatchImg;
+        // SaveVPStestResult->PnPpose[image_num] = poseresult;
+        SaveVPStestResult->PnPInlierRatio[image_num] = PnPInlierRatio;
+        SaveVPStestResult->PnPInliers[image_num] = Inliers.rows;
+        SaveVPStestResult->DBoW2ResultImgNum[image_num] = ReferenceKFId;
 
 
 
-        // cv::waitKey();
+        cv::waitKey();
         
         image_num++;
         std::cout << std::endl;
 
     }
     
-    // std::ofstream out(filepath, std::ios_base::binary);
-    // if (!out)
-    // {
-    //     std::cout << "Cannot Write to Database File: " << std::endl;
-    //     exit(-1);
-    // }
-    // boost::archive::binary_oarchive oa(out, boost::archive::no_header);
-    // oa << SaveVPStestResult;
-    // out.close();
+    std::ofstream out(filepath, std::ios_base::binary);
+    if (!out)
+    {
+        std::cout << "Cannot Write to Database File: " << std::endl;
+        exit(-1);
+    }
+    boost::archive::binary_oarchive oa(out, boost::archive::no_header);
+    oa << SaveVPStestResult;
+    out.close();
 
     time_t finish = time(NULL);
     duration = (double)(finish - start);

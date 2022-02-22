@@ -1,4 +1,5 @@
 #include "VPStest.h"
+#include "utils.h"
 
 
 cv::Mat InputQueryImg(std::string QueryFile)

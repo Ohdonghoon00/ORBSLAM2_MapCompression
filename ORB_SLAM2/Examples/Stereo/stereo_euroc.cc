@@ -184,40 +184,40 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    SLAM.SaveTrajectoryTUM("EurocMH05_Trajectory.txt");
+    SLAM.SaveTrajectoryTUM("EurocMH03_Trajectory.txt");
 
     // Save Camera Keyframe Trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("EurocMH05_Keyframe_Trajectory.txt");
+    SLAM.SaveKeyFrameTrajectoryTUM("EurocMH03_Keyframe_Trajectory.txt");
 
     // Save in Original Database.h
-    SLAM.SaveOriginalDataBase("EurocMH05_DB_original.bin");
+    SLAM.SaveOriginalDataBase("EurocMH03_DB_original.bin");
     
     // Map Compression
-    SLAM.MapCompression2(0.7, "EurocMH05_DB_70%.bin");
+    SLAM.MapCompression2(0.7, "EurocMH03_DB_70%.bin");
 
     // Save in Compressed Database.h
-    // SLAM.SaveCompressedDataBase("EurocMH05_DB_70%.bin"); // 0.7
+    // SLAM.SaveCompressedDataBase("EurocMH03_DB_70%.bin"); // 0.7
 
     // Map Compression
-    SLAM.MapCompression2(0.5, "EurocMH05_DB_50%.bin");
+    SLAM.MapCompression2(0.5, "EurocMH03_DB_50%.bin");
 
     // Save in Compressed Database.h
-    // SLAM.SaveDataBase("EurocMH05_DB_50%.bin"); // 0.7 * 0.7 = 0.49
+    // SLAM.SaveDataBase("EurocMH03_DB_50%.bin"); // 0.7 * 0.7 = 0.49
 
     // Map Compression
-    SLAM.MapCompression2(0.35, "EurocMH05_DB_35%.bin");
+    SLAM.MapCompression2(0.35, "EurocMH03_DB_35%.bin");
 
     // Save in Compressed Database.h
-    // SLAM.SaveDataBase("EurocMH05_DB_35%.bin"); // 0.7 ^ 3 = 0.343
+    // SLAM.SaveDataBase("EurocMH03_DB_35%.bin"); // 0.7 ^ 3 = 0.343
 
     // Map Compression
-    SLAM.MapCompression2(0.2, "EurocMH05_DB_20%.bin");
+    SLAM.MapCompression2(0.2, "EurocMH03_DB_20%.bin");
 
     // Save in Compressed Database.h
-    // SLAM.SaveDataBase("EurocMH05_DB_20%.bin"); // 0.343 * 0.6 = 0.2058
+    // SLAM.SaveDataBase("EurocMH03_DB_20%.bin"); // 0.343 * 0.6 = 0.2038
 
     // Save Timestamp + Trajectory result to # time tx ty tz qx qy qz qw
-    SLAM.SavePose("EurocMH05_DB_Trajectory_result.txt");
+    SLAM.SavePose("EurocMH03_DB_Trajectory_result.txt");
 
     return 0;
 }

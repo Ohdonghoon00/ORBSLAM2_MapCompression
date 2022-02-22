@@ -65,38 +65,6 @@ std::vector<cv::Point2f> KeyPoint2Point2f(std::vector<cv::KeyPoint> KeyPoints)
     return pts2f;
 }
 
-Vector6d To6DOF(Eigen::Matrix4d RT)
-{
-    Eigen::Matrix3d R = RT.block<3, 3>(0, 0);
-    Eigen::AngleAxisd rod(R);
-    Eigen::Vector3d r(rod.axis());
-    double angle = rod.angle();
-    r *= angle;
-    
-    Vector6d Pose;
-    Pose << r.x(), r.y(), r.z(), RT(0, 3), RT(1, 3), RT(2, 3);
-    return Pose;
-}
-
-Eigen::Matrix4d To44RT(Vector6d rot)
-{
-
-    cv::Mat R( 1, 3, CV_64FC1);
-    R.at<double>(0, 0) = rot[0];
-    R.at<double>(0, 1) = rot[1];
-    R.at<double>(0, 2) = rot[2];
-
-    cv::Rodrigues(R, R);
-
-    Eigen::Matrix4d RT;
-    RT << R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), rot[3],
-                R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), rot[4],
-                R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), rot[5],
-                0,                 0,                   0,                  1;
-
-    return RT;
-}
-
 Eigen::Vector3d To3DOF(Eigen::Quaterniond q)
 {
     Eigen::Matrix3d R(q);

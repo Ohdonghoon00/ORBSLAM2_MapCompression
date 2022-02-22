@@ -9,6 +9,7 @@
 #include "Converter.h"
 #include "Parameter.h"
 #include "ORBVocabulary.h"
+#include "utils.h"
 
 #include<iostream>
 #include<algorithm>
