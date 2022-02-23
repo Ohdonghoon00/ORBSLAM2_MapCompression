@@ -77,5 +77,6 @@
         "numeric": "cpp",
         "core": "cpp",
         "dense": "cpp"
-    }
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }
