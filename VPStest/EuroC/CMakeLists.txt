@@ -25,12 +25,14 @@ if (NOT BOOST_SERIALIZATION)
 endif()
 
 add_library(Lib SHARED
-VPStest.cpp
+utils.cpp
+
 DataBase.cpp
 ORBextractor.cc
 map_viewer.cpp
 VPStestResult.cpp
-utils.cpp )
+VPStest.cpp
+ )
 
 target_link_libraries(Lib
   
@@ -51,12 +53,16 @@ target_link_libraries(Lib
 add_executable(Undistortion undistortion_euroc.cpp)
 target_link_libraries(Undistortion Lib)
 
-
+# GT pose for Evaluation
+add_executable(GT_trajectory GT_trajectory.cpp)
+target_link_libraries(GT_trajectory Lib)
 
 # Euroc VPStest main
-add_executable(VPStest_euroc main_euroc.cpp)
+add_executable(VPStest_euroc main_euroc.cpp )
 target_link_libraries(VPStest_euroc Lib)
 
+add_executable(VPStest_euroc_Compressed main_euroc_compressed.cpp )
+target_link_libraries(VPStest_euroc_Compressed Lib)
 
 
 # Evaluation
@@ -67,6 +73,9 @@ target_link_libraries(LoadResult Lib)
 add_executable(Evaluation_euroc Evaluation_euroc.cpp)
 target_link_libraries(Evaluation_euroc Lib)
 
+# for debug
+add_executable(Query_one_Image Query_one_Image.cpp )
+target_link_libraries(Query_one_Image Lib)
 
 
 

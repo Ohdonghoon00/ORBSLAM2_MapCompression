@@ -17,7 +17,7 @@
 #include<iomanip>
 #include<chrono>
 
-
+extern cv::Mat K;
 
 class VPStest
 {

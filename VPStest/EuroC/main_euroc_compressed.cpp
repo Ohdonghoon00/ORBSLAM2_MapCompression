@@ -142,20 +142,52 @@ int main(int argc, char **argv)
         QueryGTTrajectory.push_back(pose);        
     }
 
+    // Original Map result TimeStamp and Selected KF
+    std::string OriginalResultPath = argv[6];
+    std::string OriginalTimeStampPath = OriginalResultPath + "/MH01_MH02_VPStest_original_TimeStamp.txt";
+    std::string OriginalResultSelPath = OriginalResultPath + "/MH01_MH02_original_Result.txt";
+    
+    ifstream OriginalTimeStampFile(OriginalTimeStampPath, std::ifstream::in);
+    ifstream OriginalResultSelFile(OriginalResultSelPath, std::ifstream::in);
+
+    std::vector<double> OriginalResultTimeStamps;
+    std::vector<int> OriginalResultSelectedKF;
+
+    std::string line1;
+    while(std::getline(OriginalTimeStampFile, line1)){
+        std::string value;
+        std::vector<std::string> values;
+
+        std::stringstream ss(line1);
+        while(std::getline(ss, value, ' '))
+            values.push_back(value);
+        OriginalResultTimeStamps.push_back(std::stod(values[0]));
+    }
+
+    std::string line2;
+    while(std::getline(OriginalResultSelFile, line2)){
+        std::string value;
+        std::vector<std::string> values;
+
+        std::stringstream ss(line2);
+        while(std::getline(ss, value, ' '))
+            values.push_back(value);
+        OriginalResultSelectedKF.push_back(std::stoi(values[3]));
+    }
 
     // Save PnPinlier result
     ofstream TimeStampFile;
-    TimeStampFile.open("MH01_MH02_VPStest_original_TimeStamp.txt");
+    TimeStampFile.open("MH01_MH02_VPStest_20%_TimeStamp.txt");
 
     // Save trajectory result
     ofstream EstimateTraj;
-    EstimateTraj.open("MH01_MH02_VPStest_original_Pose.txt");
+    EstimateTraj.open("MH01_MH02_VPStest_20%_Pose.txt");
 
     // PnP and DBoW2 Result
     ofstream ResultFile;
-    ResultFile.open("MH01_MH02_original_Result.txt");
+    ResultFile.open("MH01_MH02_20%_Result.txt");
 
-    std::string filepath = "MH01_MH02_VPStest_original_result.bin";
+    std::string filepath = "MH01_MH02_VPStest_20%_result.bin";
 
     time_t start = time(NULL);
     
@@ -163,7 +195,17 @@ int main(int argc, char **argv)
     while(image_num < Queryimgs.size())
     {
         // glClear(GL_COLOR_BUFFER_BIT);
+        // std::cout << setprecision(19) << timestamps[image_num] << std::endl;
+        // std::cout << setprecision(19) << OriginalResultTimeStamps[image_num] << std::endl;
+        auto it = std::find(OriginalResultTimeStamps.begin(), OriginalResultTimeStamps.end(), timestamps[image_num]);
+        if(it == OriginalResultTimeStamps.end()){
+            image_num++;
+            // std::cout << "a" << std::endl;
+            continue;
+        }
+        int index = it - OriginalResultTimeStamps.begin();
 
+        
         cv::Mat QueryImg = Queryimgs[image_num];
         if(QueryImg.empty()) {
             std::cout << " Error at input query img " << std::endl; 
@@ -189,15 +231,16 @@ int main(int argc, char **argv)
         int DBow2HighScoreKFId = ret[0].Id;
 
         // FindReferenceKF
-        std::cout << "Find Reference Keyframe !! " << std::endl;
-        VPStest.SetCandidateKFid(ret);
+        // std::cout << "Find Reference Keyframe !! " << std::endl;
+        // VPStest.SetCandidateKFid(ret);
 
-        int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints);
-        std::cout << " Selected Keyframe num : " << ReferenceKFId << std::endl;
-        if(ReferenceKFId == -1){
-            image_num++;
-            continue;
-        }    
+        int ReferenceKFId = OriginalResultSelectedKF[index];
+        std::cout << "Reference Keyframe : " << ReferenceKFId << std::endl;
+        // std::cout << " Selected Keyframe num : " << ReferenceKFId << std::endl;
+        // if(ReferenceKFId == -1){
+        //     image_num++;
+        //     continue;
+        // }    
 
 
         // VPS test to ReferenceKF
@@ -210,6 +253,12 @@ int main(int argc, char **argv)
         Vector6d PnPpose = To6DOF(Pose);
 
 
+        // draw Total MatchImg
+        cv::Mat TotalMatchImg;
+        std::cout << " Match size : " << Matches.size() << std::endl;
+        std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(ReferenceKFId);
+        cv::drawMatches(QueryImg, QKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, TotalMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+        cv::imshow("TotalMatchImg", TotalMatchImg);
 
 
         // RSE Error (root - square error)
@@ -244,7 +293,12 @@ int main(int argc, char **argv)
         std::cout << "RotError : " << Rad2Degree(Error_Rot) << std::endl;
         std::cout << " SolvePnPInlier Ratio : " << PnPInlierRatio << std::endl;
         std::cout << " Inliers num  : " << Inliers.rows << std::endl;
-
+        
+        // debug
+        for(int i = 0; i < DB2dMatchForDraw.size(); i++){
+            std::cout << DB2dMatchForDraw[i].pt << " ";
+        }
+        std::cout << std::endl;
         // Draw Map point and keyframe pose
         // Map Points
         std::vector<cv::Point3f> LandMarks = DB->GetKF3dPoint(ReferenceKFId);
@@ -254,20 +308,21 @@ int main(int argc, char **argv)
         }
             
         // For Draw Inliers Match
-        std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(ReferenceKFId);
+        
         VPStest.InlierMatchResult(Matches, Inliers);
-        cv::Mat MatchImg;
+        cv::Mat InlierMatchImg;
         std::cout << " Match size : " << Matches.size() << std::endl;
 
-        cv::drawMatches(QueryImg, QKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, MatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-        cv::imshow("MatchImg", MatchImg);
+        cv::drawMatches(QueryImg, QKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, InlierMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+        cv::imshow("InlierMatchImg", InlierMatchImg);
 
         // VPS Result Pose
         show_trajectory_keyframe(Pose, 0.0, 0.0, 1.0, 0.5, 3.5);
         glFlush();
         
         // Save Result
-        // SaveVPStestResult->MatchingImg[image_num] = MatchImg;
+        SaveVPStestResult->InlierMatchingImg[image_num] = InlierMatchImg;
+        SaveVPStestResult->TotalMatchingImg[image_num] = TotalMatchImg;
         // SaveVPStestResult->PnPpose[image_num] = poseresult;
         // SaveVPStestResult->PnPInlierRatio[image_num] = PnPInlierRatio;
         // SaveVPStestResult->PnPInliers[image_num] = Inliers.rows;
@@ -275,7 +330,7 @@ int main(int argc, char **argv)
 
 
 
-        // cv::waitKey();
+        cv::waitKey();
         
         image_num++;
         std::cout << std::endl;

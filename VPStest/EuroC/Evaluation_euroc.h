@@ -26,67 +26,40 @@ bool ISNaN(Eigen::VectorXf Es)
 }
 
 
-float AbsoluteTrajectoryError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::VectorXf> Es)
+int AbsoluteTrajectoryError(std::vector<Vector6d> GT, std::vector<Vector6d> Es, double &RMS_Trans_Error, double &RMS_Rot_Error)
 {
-    float RMS_Error(0.0);
+
     int count = 0;
-    float Posethres = 0.5;
+    
     for(int i = 0; i < GT.size(); i++){
         
-        if(ISNaN(Es[i]) == false){
-            // std::cout << Es[i](0) << std::endl;
-            std::cout << count << std::endl;
+        // if(ISNaN(Es[i]) == false){
+        //     // std::cout << Es[i](0) << std::endl;
+        //     std::cout << count << std::endl;
             
-            continue;
-        }
-        Eigen::Quaternionf GT_q;
-        Eigen::Quaternionf Es_q;
+        //     continue;
+        // }
+        Eigen::Matrix4d GTMotion = To44RT(GT[i]);
+        Eigen::Matrix4d EsMotion = To44RT(Es[i]);
+        Eigen::Matrix4d RelativePose = GTMotion.inverse() * EsMotion;
 
-        GT_q.x() = GT[i](3);
-        GT_q.y() = GT[i](4);
-        GT_q.z() = GT[i](5);
-        GT_q.w() = GT[i](6);
-        Eigen::Matrix3f GT_R(GT_q);
-        
-        Es_q.x() = Es[i](3);
-        Es_q.y() = Es[i](4);
-        Es_q.z() = Es[i](5);
-        Es_q.w() = Es[i](6);
-        Eigen::Matrix3f Es_R(Es_q);
+        // trans
+        Eigen::Vector3d RelativeTrans;
+        RelativeTrans << RelativePose(0, 3), RelativePose(1, 3), RelativePose(2, 3);
+        RMS_Trans_Error += RelativeTrans.dot(RelativeTrans);
 
-        Eigen::Matrix4f GTMotion;
-        GTMotion << GT_R(0, 0), GT_R(0, 1), GT_R(0, 2), GT[i](0),
-                    GT_R(1, 0), GT_R(1, 1), GT_R(1, 2), GT[i](1),
-                    GT_R(2, 0), GT_R(2, 1), GT_R(2, 2), GT[i](2),
-                    0, 0, 0, 1;
-        
-        Eigen::Matrix4f EsMotion;
-        EsMotion << Es_R(0, 0), Es_R(0, 1), Es_R(0, 2), Es[i](0),
-                    Es_R(1, 0), Es_R(1, 1), Es_R(1, 2), Es[i](1),
-                    Es_R(2, 0), Es_R(2, 1), Es_R(2, 2), Es[i](2),
-                    0, 0, 0, 1;        
-    
-        if(std::abs(GT[i](2) - Es[i](2)) < Posethres && std::abs(GT[i](0) - Es[i](0)) < Posethres && std::abs(GT[i](1) - Es[i](1)) < Posethres){
-            
-            Eigen::Matrix4f RelativePose = GTMotion.inverse() * EsMotion;
-            Eigen::Vector3f RelativeTrans;
-            RelativeTrans << RelativePose(0, 3), RelativePose(1, 3), RelativePose(2, 3);
-            RMS_Error += RelativeTrans.dot(RelativeTrans);
-            
-            
-            
-            count++;
+        // rotation
+        Eigen::Matrix3d RelativeRot_ = RelativePose.block<3, 3>(0, 0);
+        Eigen::Vector3d RelativeRot = ToVec3(RelativeRot_);
+        RMS_Rot_Error += RelativeRot.dot(RelativeRot);
 
-
-        }    
-        else{
-        //     // std::cout << " failure image Num  : ";
-        //     // std::cout << i + 1 << " ";
-        }
+        count++;
     }
-    float RMS_Error_ = std::sqrt(RMS_Error / count);
-    std::cout << "ATE conut : " << count << std::endl;
-    return RMS_Error_;
+    
+    RMS_Trans_Error = std::sqrt(RMS_Trans_Error / count);
+    RMS_Rot_Error = std::sqrt(RMS_Rot_Error / count);
+    
+    return 0;
 }
 
 float RelativePoseError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::VectorXf> Es)
@@ -193,49 +166,6 @@ float RelativePoseError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::Vect
 
     return RMS_Error_;
 
-}
-
-Eigen::VectorXf LeftCamToRightCam(Eigen::VectorXf Leftcam)
-{
-    Eigen::Matrix4f BaselineMotion;
-    // kitti 00-02
-    BaselineMotion <<   1, 0, 0, 0.555165012698f,
-                        0, 1, 0, 0,
-                        0, 0, 1, 0,
-                        0, 0, 0, 1;
-    // kitti 04-12
-    // BaselineMotion <<   1, 0, 0, 0.537126981164f,
-    //                     0, 1, 0, 0,
-    //                     0, 0, 1, 0,
-    //                     0, 0, 0, 1;
-    
-    Eigen::VectorXf Rightcam(7);
-
-    Eigen::Quaternionf LeftCam_q;
-
-    LeftCam_q.x() = Leftcam(3);
-    LeftCam_q.y() = Leftcam(4);
-    LeftCam_q.z() = Leftcam(5);
-    LeftCam_q.w() = Leftcam(6);
-    
-    Eigen::Matrix3f LeftCam_R(LeftCam_q);
-
-    Eigen::Matrix4f LeftCam_Motion;
-    LeftCam_Motion <<    LeftCam_R(0, 0), LeftCam_R(0, 1), LeftCam_R(0, 2), Leftcam(0),
-                        LeftCam_R(1, 0), LeftCam_R(1, 1), LeftCam_R(1, 2), Leftcam(1),
-                        LeftCam_R(2, 0), LeftCam_R(2, 1), LeftCam_R(2, 2), Leftcam(2),
-                        0, 0, 0, 1;    
-
-    Eigen::Matrix4f RightCam_Motion = LeftCam_Motion * BaselineMotion;
-
-    Eigen::Matrix<float, 3, 3> RightCam_R = RightCam_Motion.block<3, 3>(0, 0);
-
-    Eigen::Quaternionf RightCam_q(RightCam_R);
-
-    Rightcam << RightCam_Motion(0, 3), RightCam_Motion(1, 3), RightCam_Motion(2, 3), 
-                RightCam_q.x(), RightCam_q.y(), RightCam_q.z(), RightCam_q.w();
-
-    return Rightcam;
 }
 
 void TranslationError(std::vector<Eigen::VectorXf> GT, std::vector<Eigen::VectorXf> Es, std::ofstream &filepath)

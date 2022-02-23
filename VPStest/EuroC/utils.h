@@ -8,9 +8,25 @@
 #include <opencv2/core.hpp>
 #include "opencv2/opencv.hpp"
 
+
+
 typedef Eigen::Matrix<float, 6, 1> Vector6f;
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
 
+
+extern Eigen::Vector3d Origin;
+extern Eigen::Vector3d ZVec;
+extern Eigen::Matrix3d Iden;
+
+//////////// EuroC ////////////////////
+
+extern float fx, fy, cx, cy;
+extern float IntrinsicData[];
+      
+extern double Cam2BodyData[];
+
+cv::Mat GetK(float* IntrinsicData);
+Eigen::Matrix4d GetCam2Body(double * Cam2BodyData);
 std::vector<Eigen::Vector3d> Mat3XdToVec3d(Eigen::Matrix3Xd LidarPoints);
 Eigen::Vector3d ToVec3(Eigen::Matrix3d rot);
 Eigen::Vector3f ToVec3(Eigen::Matrix3f rot);
@@ -28,15 +44,13 @@ float VerticalAngle(Eigen::Vector3d p);
 double PointDistance(Eigen::Vector3d p);
 double PointDistance(Eigen::Vector3d p1, Eigen::Vector3d p2);
 double CosRaw2(double a, double b, float ang);
+double Rad2Degree(double rad);
+double Ddegree2Rad(double degree);
 
-namespace constants
-{
-    // cv::Mat K;
-    const Eigen::Matrix4d Cam2Body;
-    // Cam2Body << 0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
-    //      0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
-    //     -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
-    //      0.0, 0.0, 0.0, 1.0;
+// namespace constants
+// {
+//     // cv::Mat K;
 
-    const int abc = 1;
-}
+
+//     const int abc = 1;
+// }

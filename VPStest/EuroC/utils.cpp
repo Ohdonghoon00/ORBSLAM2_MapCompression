@@ -1,38 +1,53 @@
 #include "utils.h"
 
 //////////////////////////////////////////////////////////
-
 Eigen::Vector3d Origin{0.0, 0.0, 0.0};
 Eigen::Vector3d ZVec = Eigen::Vector3d::UnitZ();
 Eigen::Matrix3d Iden = Eigen::Matrix3d::Identity();
 
+//////////// EuroC ////////////////////
+
+float fx(435.2046959714599), fy(435.2046959714599), cx(367.4517211914062), cy(252.2008514404297);
+float IntrinsicData[] = {   fx, 0.0,cx, 
+                            0.0, fy, cy,
+                            0.0, 0.0, 1.0}; 
 
 
-
-// namespace constants
-// {
 ///// Extrinsic /////
-
-// MH01  body(IMU) - cam0 //
-// extern const Eigen::Matrix4d Cam2Body;
-
-
-
-
-
-
-
-// MH02  body(IMU) - cam0 //
+// Machine Hall  body(IMU) - cam0 //
+double Cam2BodyData[] = {0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
+         0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
+        -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
+         0.0, 0.0, 0.0, 1.0};
 
 
 
 
 
-// MH03  body(IMU) - cam0 //
+// ViconRoom1  body(IMU) - cam0 //
+
+
+
+// ViconRoom2  body(IMU) - cam0 //
+
+
+
+
+
 
 //////////////////////////////////////////////////////////
-// }
 
+cv::Mat GetK(float* IntrinsicData)
+{
+    cv::Mat K(3, 3, CV_32F, IntrinsicData);
+    return K;
+}
+
+Eigen::Matrix4d GetCam2Body(double * Cam2BodyData)
+{
+    Eigen::Matrix4d Cam2Body = Eigen::Map<Eigen::Matrix4d>(Cam2BodyData);
+    return Cam2Body.transpose();
+}
 
 std::vector<Eigen::Vector3d> Mat3XdToVec3d(Eigen::Matrix3Xd LidarPoints)
 {
@@ -45,6 +60,7 @@ std::vector<Eigen::Vector3d> Mat3XdToVec3d(Eigen::Matrix3Xd LidarPoints)
 
     return PointCloud;
 }
+
 
 
 Eigen::Vector3d ToVec3(Eigen::Matrix3d rot)
@@ -202,4 +218,12 @@ double PointDistance(Eigen::Vector3d p1, Eigen::Vector3d p2){
 
 double CosRaw2(double a, double b, float ang){
     return sqrt(a * a + b * b - 2 * a * b * cos(ang * M_PI / 180));
+}
+
+double Rad2Degree(double rad){
+    return rad * 180 / M_PI;
+}
+
+double Ddegree2Rad(double degree){
+    return degree * M_PI / 180;
 }

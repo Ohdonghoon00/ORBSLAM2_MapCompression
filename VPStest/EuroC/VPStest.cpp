@@ -1,6 +1,6 @@
 #include "VPStest.h"
-#include "utils.h"
 
+cv::Mat K = GetK(IntrinsicData);
 
 cv::Mat InputQueryImg(std::string QueryFile)
 { 
@@ -45,7 +45,7 @@ std::vector<cv::DMatch> VPStest::ORBDescriptorMatch(cv::Mat queryDescriptor, cv:
 void VPStest::SetCandidateKFid(DBoW2::QueryResults ret)
 {
     CandidateKFid.clear();
-    for(int i = 0; i < 8; i++){
+    for(int i = 0; i < 10; i++){
         CandidateKFid.push_back(ret[i].Id);
     }
 }
@@ -55,6 +55,7 @@ void VPStest::SetCandidateKFid(DBoW2::QueryResults ret)
 double VPStest::PnPInlierRatio(int KFid)
 {
     cv::Mat R, T, RT, inliers;
+    
     // std::cout << MatchDB3dPoints[KFid].size() << "  " << MatchQ2dPoints[KFid].size() << std::endl;
     cv::solvePnPRansac(MatchDB3dPoints[KFid], MatchQ2dPoints[KFid], K, cv::noArray(), R, T, false, 300, 3.0F, 0.99, inliers, 0 );
     double PnPInlierRatio = (double)inliers.rows / (double)MatchDB3dPoints[KFid].size();
@@ -135,20 +136,34 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
         PnPinlierRatios.push_back(_PnPInlierRatio);
         inlier_nums.push_back(inliers.rows);
 
+
+
     }
 
-    std::vector<double> PnPinlierRatios_(PnPinlierRatios);
+    // print value
     for(int i = 0; i < PnPinlierRatios.size(); i++) std::cout << PnPinlierRatios[i] << "  ";
     std::cout << std::endl;
     for(int i = 0; i < inlier_nums.size(); i++) std::cout << inlier_nums[i] << "  ";
     std::cout << std::endl;
-    std::sort(PnPinlierRatios.begin(), PnPinlierRatios.end());
-    auto it = find(PnPinlierRatios_.begin(), PnPinlierRatios_.end(), PnPinlierRatios.back());
-    int index = it - PnPinlierRatios_.begin();
 
-    int ReferenceId = CandidateKFid[index];
+    double MaxRatio = *max_element(PnPinlierRatios.begin(), PnPinlierRatios.end());
+    int MaxInlier = *max_element(inlier_nums.begin(), inlier_nums.end());
+    
+    int MaxRatioIdx = max_element(PnPinlierRatios.begin(), PnPinlierRatios.end()) - PnPinlierRatios.begin();
+    int MaxInlierIdx = max_element(inlier_nums.begin(), inlier_nums.end()) - inlier_nums.begin();
+    std::cout << MaxInlier << std::endl;
+    std::cout << MaxInlierIdx << std::endl;
 
-    return ReferenceId;
+
+    if(MaxRatioIdx == MaxInlierIdx && MaxInlier > 30)
+        return CandidateKFid[MaxInlierIdx];
+    else
+        return -1;
+    // // Place Recognition debug
+    // cv::Mat BestRatioImage = DB->LeftKFimg[CandidateKFid[MaxRatioIdx]];
+    // cv::imshow("BestRatioImage", BestRatioImage);
+    
+    // return ReferenceId;
 
 }
 
@@ -157,7 +172,8 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
     std::vector<cv::DMatch> Matches;
     std::vector<cv::Point3f> Match3dpts;
     std::vector<cv::Point2f> Match2dpts;
-    std::vector<cv::KeyPoint> DB2dpts; 
+    std::vector<cv::KeyPoint> DB2dpts;
+    
     int NearSearchNum = 0;
     float Disthres = 100.0;
 

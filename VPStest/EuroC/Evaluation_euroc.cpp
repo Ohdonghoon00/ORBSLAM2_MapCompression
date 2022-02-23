@@ -4,7 +4,7 @@
 #include "ORBVocabulary.h"
 // #include "Parameter.h"
 #include "Converter.h"
-#include "Evaluatation.h"
+#include "Evaluation_euroc.h"
 #include "utils.h"
 
 #include <opencv2/core.hpp>
@@ -30,85 +30,118 @@ int main(int argc, char **argv)
 
 
 
-    // GT Query Pose csv
-    std::string GTQueryPosePath = argv[1];
-    std::ifstream GTQueryPoseFile(GTQueryPosePath, std::ifstream::in);
+    // GT SLAM Pose txt, GT Query Pose txt
+    std::string OriginalPosePath = argv[1];
+    std::string CompressedPosePath = argv[2];
+    
+    std::ifstream OriginalPoseFile(OriginalPosePath, std::ifstream::in);
+    std::ifstream CompressedPoseFile(CompressedPosePath, std::ifstream::in);
+    
+    if(!OriginalPoseFile.is_open()){
+        std::cout << " GT SLAM Pose file failed to open " << std::endl;
+        return EXIT_FAILURE;
+    }    
 
-    if(!GTQueryPoseFile.is_open()){
+    if(!CompressedPoseFile.is_open()){
         std::cout << " GT Query Pose file failed to open " << std::endl;
         return EXIT_FAILURE;
     }    
 
-    int GTQueryPoseLine_num = 0;
-    std::string GTQueryPoseLine;
-    std::vector<Vector6d> Poses;
-    std::vector<double> IMUtimestamps;
-    std::vector<double> Camtimestamps;
-
-    while(std::getline(GTQueryPoseFile, GTQueryPoseLine))
-    {
-        if(GTQueryPoseLine_num == 0){
-            GTQueryPoseLine_num++;
-            continue;
-        }
-        
-        std::string GTQueryPosevalue;
-        std::vector<std::string> GTQueryPosevalues;
-
-        std::stringstream ss(GTQueryPoseLine);
-        while(std::getline(ss, GTQueryPosevalue, ','))
-            GTQueryPosevalues.push_back(GTQueryPosevalue);
-        IMUtimestamps.push_back(std::stod(GTQueryPosevalues[0]));
-        Eigen::Quaterniond q;
-        q.x() = std::stod(GTQueryPosevalues[5]);
-        q.y() = std::stod(GTQueryPosevalues[6]);
-        q.z() = std::stod(GTQueryPosevalues[7]);
-        q.w() = std::stod(GTQueryPosevalues[4]);
-
-        Eigen::Vector3d r = To3DOF(q);
-        Vector6d Pose;
-        Pose << r.x(), r.y(), r.z(), std::stod(GTQueryPosevalues[1]), std::stod(GTQueryPosevalues[2]), std::stod(GTQueryPosevalues[3]);
-        Poses.push_back(Pose);
-    }
-
-    // camera timestamp
-    ifstream s;
-    s.open(argv[2]);
-    std::string line;
-
-    while(std::getline(s, line)){
-        Camtimestamps.push_back(std::stod(line));
-    }
-    s.close();
-        
-
-
-
-    // Save file
-    ofstream file;
-    file.open("MH02_GT_Trajectory.txt");
-    Eigen::Matrix4d RT = To44RT(Poses[0]);
+    int CompressedPoseLine_num(0), OriginalPoseLine_num;
+    std::string CompressedPoseLine, OriginalPoseLine;
     
-    for(int i = 0; i < Camtimestamps.size(); i++){
-        double Min = std::numeric_limits<double>::max();
-        int idx = -1;
+    std::vector<Vector6d> OriginalPoses, CompressedPoses;
+    std::vector<double> IMUQuerytimestamps;
+    
+    // Original VPS Pose
+    while(std::getline(OriginalPoseFile, OriginalPoseLine))
+    {
+        std::string OriginalPosevalue;
+        std::vector<std::string> OriginalPosevalues;
         
-        for(int j = 0; j < IMUtimestamps.size(); j++){
-            double diff = std::fabs(Camtimestamps[i] - IMUtimestamps[j]);
-            if(diff < Min){
-                Min = diff;
-                idx = j;
-            }
-        }
-        std::cout << setprecision(20) << Camtimestamps[i] << "   " << IMUtimestamps[idx] << std::endl;
-        Eigen::Matrix4d popo = RT.inverse() * To44RT(Poses[idx]);
-        Eigen::Quaterniond qqq = ToQuaternion(popo);
-        file << i << " " << popo(0, 3) << " " << popo(1, 3) << " " << popo(2, 3) << 
-                " " << qqq.x() << " " << qqq.y() << " " << qqq.z() << " " << qqq.w() << std::endl;
+
+        std::stringstream ss(OriginalPoseLine);
+        while(std::getline(ss, OriginalPosevalue, ' '))
+            OriginalPosevalues.push_back(OriginalPosevalue);        
+        Vector6d Pose;
+        Pose << std::stod(OriginalPosevalues[0]), std::stod(OriginalPosevalues[1]), std::stod(OriginalPosevalues[2]), 
+                std::stod(OriginalPosevalues[3]), std::stod(OriginalPosevalues[4]), std::stod(OriginalPosevalues[5]);
+        OriginalPoses.push_back(Pose);
+        
+        OriginalPoseLine_num++;
+    }    
+    
+    // Compressed VPS Pose
+    while(std::getline(CompressedPoseFile, CompressedPoseLine))
+    {
+        std::string CompressedPosevalue;
+        std::vector<std::string> CompressedPosevalues;
+        
+
+        std::stringstream ss(CompressedPoseLine);
+        while(std::getline(ss, CompressedPosevalue, ' '))
+            CompressedPosevalues.push_back(CompressedPosevalue);
+        Vector6d Pose;
+        Pose << std::stod(CompressedPosevalues[0]), std::stod(CompressedPosevalues[1]), std::stod(CompressedPosevalues[2]), 
+                std::stod(CompressedPosevalues[3]), std::stod(CompressedPosevalues[4]), std::stod(CompressedPosevalues[5]);
+        CompressedPoses.push_back(Pose);
+        
+        CompressedPoseLine_num++;
     }
 
-    file.close();
+    std::string OriginalResultPath = argv[3];
+    std::ifstream OriginalResultFile(OriginalResultPath, std::ifstream::in);
+    std::vector<int> Inliers;
 
+    std::string line1;
+    while(std::getline(OriginalResultFile, line1)){
+        std::string value;
+        std::vector<std::string> values;
 
+        std::stringstream ss(line1);
+        while(std::getline(ss, value, ' '))
+            values.push_back(value);
+        Inliers.push_back(std::stoi(values[1]));
+    }
+
+    std::cout << "Data Load Finish" << std::endl;
+
+    double RMS_Trans_Error(0.0), RMS_Rot_Error(0.0); 
+    AbsoluteTrajectoryError(OriginalPoses, CompressedPoses, RMS_Trans_Error, RMS_Rot_Error);
+    std::cout << " RMSE Trans Error : " << RMS_Trans_Error << std::endl;
+    std::cout << " RMSE Rotation Error : " << Rad2Degree(RMS_Rot_Error) << std::endl;
+
+    std::ofstream error_file;
+    error_file.open("OriginalTo_70%_Error.txt");
+
+    int TotalInliers = 0;
+    int count = OriginalPoses.size();
+    for(int i = 0; i < OriginalPoses.size(); i++){
+
+    
+        Eigen::Matrix4d GTMotion = To44RT(OriginalPoses[i]);
+        Eigen::Matrix4d EsMotion = To44RT(CompressedPoses[i]);
+        Eigen::Matrix4d RelativePose = GTMotion.inverse() * EsMotion;
+
+        // trans
+        Eigen::Vector3d RelativeTrans;
+        RelativeTrans << RelativePose(0, 3), RelativePose(1, 3), RelativePose(2, 3);
+        double RMS_Trans_Error_ = std::sqrt(RelativeTrans.dot(RelativeTrans));
+        if(RMS_Trans_Error_ > 1.0){
+            count--;
+            TotalInliers += Inliers[i];
+        }
+        // rotation
+        Eigen::Matrix3d RelativeRot_ = RelativePose.block<3, 3>(0, 0);
+        Eigen::Vector3d RelativeRot = ToVec3(RelativeRot_);
+        double RMS_Rot_Error_ = std::sqrt(RelativeRot.dot(RelativeRot));
+
+        
+        error_file << RMS_Trans_Error_ << " " << Rad2Degree(RMS_Rot_Error_) << std::endl;
+    }
+
+    std::cout << "Fail Inlier average : " << (double)TotalInliers / (double)(OriginalPoses.size() - count) << std::endl;
+    std::cout << "Success Ratio : " << (double)count / (double)OriginalPoses.size() << std::endl;
+    error_file.close();
     return 0;
 }

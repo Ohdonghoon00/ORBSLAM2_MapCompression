@@ -43,8 +43,8 @@ int main(int argc, char **argv)
     VPStest VPStest(4000);
     ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
     
-    VPStestResult* SaveVPStestResult;
-    SaveVPStestResult = new VPStestResult();
+    // VPStestResult* SaveVPStestResult;
+    // SaveVPStestResult = new VPStestResult();
     DataBase* DB;
     double duration(0.0), duration_(0.0);
     int image_num = 0;
@@ -59,13 +59,6 @@ int main(int argc, char **argv)
     boost::archive::binary_iarchive ia(in, boost::archive::no_header);
     ia >> DB;
     in.close();
-
-
-    // for(int i = 0; DB->LeftKFimg.size(); i++){
-    //     cv::imshow("KFimg", DB->LeftKFimg[i]);
-    //     std::cout << setprecision(19) << DB->timestamps[i] << std::endl;
-    //     cv::waitKey();
-    // }
     
     // Load voc
     std::cout << "load voc" << std::endl;
@@ -97,20 +90,12 @@ int main(int argc, char **argv)
     s.open(timestampPath);
     std::string line;
     std::vector<double> timestamps;
-    std::vector<cv::Mat> Queryimgs;
         
-    // Load Query Img
+    
     std::cout << " Input Query Img " << std::endl;
-    std::string QueryPath = argv[4];
 
     while(std::getline(s, line)){
-        
-        std::stringstream ss;
-        ss << line;
-        std::string QueryImgsPath = QueryPath + "/" + ss.str() +".png";
-        cv::Mat img = cv::imread(QueryImgsPath);
-        Queryimgs.push_back(img);
-        timestamps.push_back(std::stod(line) * 10e-10);
+        timestamps.push_back(std::stod(line));
     }
     
     s.close(); 
@@ -142,35 +127,28 @@ int main(int argc, char **argv)
         QueryGTTrajectory.push_back(pose);        
     }
 
-
-    // Save PnPinlier result
-    ofstream TimeStampFile;
-    TimeStampFile.open("MH01_MH02_VPStest_original_TimeStamp.txt");
-
-    // Save trajectory result
-    ofstream EstimateTraj;
-    EstimateTraj.open("MH01_MH02_VPStest_original_Pose.txt");
-
-    // PnP and DBoW2 Result
-    ofstream ResultFile;
-    ResultFile.open("MH01_MH02_original_Result.txt");
-
-    std::string filepath = "MH01_MH02_VPStest_original_result.bin";
+    // Load Query Img
+    std::string QueryPath = argv[4];
+    int QueryImgNum = std::stoi(argv[6]);
+    double QueryTimeStamp = timestamps[QueryImgNum];
+    std::string QueryTimeStamp_string = std::to_string(lround(QueryTimeStamp));
+    std::stringstream ss;
+    std::cout << QueryTimeStamp_string << std::endl;
+    ss << QueryTimeStamp_string;
+    std::string QueryImgsPath = QueryPath + "/" + ss.str() +".png";
 
     time_t start = time(NULL);
     
     ///////// VPS TEST //////////
-    while(image_num < Queryimgs.size())
-    {
         // glClear(GL_COLOR_BUFFER_BIT);
 
-        cv::Mat QueryImg = Queryimgs[image_num];
+        cv::Mat QueryImg = cv::imread(QueryImgsPath);
         if(QueryImg.empty()) {
             std::cout << " Error at input query img " << std::endl; 
-            break;
+            return 0;
         }
         if (QueryImg.channels() > 1) cv::cvtColor(QueryImg, QueryImg, cv::COLOR_RGB2GRAY);
-        std::cout << " Image Num is  :  " << image_num << "      !!!!!!!!!!!!!!!!!!!!" << std::endl;
+        std::cout << " Image Num is  :  " << QueryImgNum << "      !!!!!!!!!!!!!!!!!!!!" << std::endl;
 
         cv::Mat mask, QDescriptors;
         std::vector<cv::KeyPoint> QKeypoints;
@@ -191,14 +169,14 @@ int main(int argc, char **argv)
         // FindReferenceKF
         std::cout << "Find Reference Keyframe !! " << std::endl;
         VPStest.SetCandidateKFid(ret);
+        
+        // Place Recognition debug
+        cv::Mat DBoW2Top1Image = DB->LeftKFimg[VPStest.CandidateKFid[0]];
+        cv::imshow("DBoW2Top1Image", DBoW2Top1Image);
 
-        int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints);
-        std::cout << " Selected Keyframe num : " << ReferenceKFId << std::endl;
-        if(ReferenceKFId == -1){
-            image_num++;
-            continue;
-        }    
-
+        int ReferenceKFId = ret[0].Id;
+        // int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints);
+        // std::cout << " Selected Keyframe num : " << ReferenceKFId << std::endl;
 
         // VPS test to ReferenceKF
         Eigen::Matrix4d Pose;
@@ -213,7 +191,7 @@ int main(int argc, char **argv)
 
 
         // RSE Error (root - square error)
-        Eigen::Matrix4d RelativePose = To44RT(QueryGTTrajectory[image_num]).inverse() * To44RT(PnPpose);
+        Eigen::Matrix4d RelativePose = To44RT(QueryGTTrajectory[QueryImgNum]).inverse() * To44RT(PnPpose);
         
         // trans
         Eigen::Vector3d RelativeTrans;
@@ -224,24 +202,16 @@ int main(int argc, char **argv)
         Eigen::Matrix3d RelativeRot_ = RelativePose.block<3, 3>(0, 0);
         Eigen::Vector3d RelativeRot = ToVec3(RelativeRot_);
         double Error_Rot = std::sqrt(RelativeRot.dot(RelativeRot));
-
-
-        TimeStampFile << setprecision(19) << timestamps[image_num] << " " << image_num << std::endl;
-
-        EstimateTraj << PnPpose[0] << " " << PnPpose[1] << " " << PnPpose[2] << 
-                " " << PnPpose[3] << " " << PnPpose[4] << " " << PnPpose[5] << std::endl;
         
-        ResultFile << PnPInlierRatio << " " << Inliers.rows << " " << DBow2HighScoreKFId << " " << ReferenceKFId << " " << Error_Trans << " " << Rad2Degree(Error_Rot) << std::endl;
-
         // Print Result
         std::cout << "Place Recognition Result !!!!!!!!!!!! " << std::endl;
-        std::cout << "Query image Num : " << image_num << std::endl;
+        std::cout << "Query image Num : " << QueryImgNum << std::endl;
         std::cout << "DataBase image Num  : " <<  ReferenceKFId << std::endl;
         std::cout << "SolvePnPResult  !!!!!!!!!!!! " << std::endl;
         std::cout << "SolvePnP Estimate Pose : " << PnPpose.transpose() << std::endl;
-        std::cout << "SolvePnP GT Pose : " << QueryGTTrajectory[image_num].transpose() << std::endl;
-        std::cout << "TransError : " << Error_Trans << std::endl;
-        std::cout << "RotError : " << Rad2Degree(Error_Rot) << std::endl;
+        std::cout << "SolvePnP GT Pose : " << QueryGTTrajectory[QueryImgNum].transpose() << std::endl;
+        std::cout << "TransError(m) : " << Error_Trans << std::endl;
+        std::cout << "RotError(degree) : " << Rad2Degree(Error_Rot) << std::endl;
         std::cout << " SolvePnPInlier Ratio : " << PnPInlierRatio << std::endl;
         std::cout << " Inliers num  : " << Inliers.rows << std::endl;
 
@@ -265,44 +235,14 @@ int main(int argc, char **argv)
         // VPS Result Pose
         show_trajectory_keyframe(Pose, 0.0, 0.0, 1.0, 0.5, 3.5);
         glFlush();
-        
-        // Save Result
-        // SaveVPStestResult->MatchingImg[image_num] = MatchImg;
-        // SaveVPStestResult->PnPpose[image_num] = poseresult;
-        // SaveVPStestResult->PnPInlierRatio[image_num] = PnPInlierRatio;
-        // SaveVPStestResult->PnPInliers[image_num] = Inliers.rows;
-        // SaveVPStestResult->DBoW2ResultImgNum[image_num] = ReferenceKFId;
-
-
-
-        // cv::waitKey();
-        
-        image_num++;
-        std::cout << std::endl;
-
-    }
-    
-    std::ofstream out(filepath, std::ios_base::binary);
-    if (!out)
-    {
-        std::cout << "Cannot Write to Database File: " << std::endl;
-        exit(-1);
-    }
-    boost::archive::binary_oarchive oa(out, boost::archive::no_header);
-    oa << SaveVPStestResult;
-    out.close();
 
     time_t finish = time(NULL);
     duration = (double)(finish - start);
     
-    std::cout << " Finish Visual Localization " << std::endl;
+    std::cout << " Finish one image Visual Localization " << std::endl;
     std::cout << "Total Landmark Num : " << DB->Landmarks.size() << std::endl;
     // file << " Total VPS time is  : " << duration << " sec" << std::endl;
-    std::cout << " Total VPS time is  : " << duration << " sec" << std::endl;
-    
-    TimeStampFile.close();
-    EstimateTraj.close();
-    ResultFile.close();
+    std::cout << " VPS time is  : " << duration << " sec" << std::endl;
     
     cv::waitKey();
 
