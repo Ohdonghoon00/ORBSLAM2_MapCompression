@@ -58,12 +58,22 @@ ORB_SLAM2/lib/
 
 ORB_SLAM2/result/
 
-VPStest/result/
-VPStest/build/
-VPStest/Thirdparty/DBoW2/build/
-VPStest/Thirdparty/DBoW2/lib/
-VPStest/Thirdparty/g2o/build/
-VPStest/Thirdparty/g2o/config.h
-VPStest/Thirdparty/g2o/lib/
-VPStest/Vocabulary/ORBvoc.txt
-VPStest/DataBase/
+VPStest/EuroC/result/
+VPStest/EuroC/build/
+VPStest/EuroC/Thirdparty/DBoW2/build/
+VPStest/EuroC/Thirdparty/DBoW2/lib/
+VPStest/EuroC/Thirdparty/g2o/build/
+VPStest/EuroC/Thirdparty/g2o/config.h
+VPStest/EuroC/Thirdparty/g2o/lib/
+VPStest/EuroC/Vocabulary/ORBvoc.txt
+VPStest/EuroC/DataBase/
+
+VPStest/Kitti/result/
+VPStest/Kitti/build/
+VPStest/Kitti/Thirdparty/DBoW2/build/
+VPStest/Kitti/Thirdparty/DBoW2/lib/
+VPStest/Kitti/Thirdparty/g2o/build/
+VPStest/Kitti/Thirdparty/g2o/config.h
+VPStest/Kitti/Thirdparty/g2o/lib/
+VPStest/Kitti/Vocabulary/ORBvoc.txt
+VPStest/Kitti/DataBase/
