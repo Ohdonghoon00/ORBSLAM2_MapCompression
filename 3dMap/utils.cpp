@@ -7,21 +7,28 @@ Eigen::Matrix3d Iden = Eigen::Matrix3d::Identity();
 
 //////////// EuroC ////////////////////
 
-float fx(435.2046959714599), fy(435.2046959714599), cx(367.4517211914062), cy(252.2008514404297);
-float IntrinsicData[] = {   fx, 0.0,cx, 
+double fx(435.2046959714599), fy(435.2046959714599), cx(367.4517211914062), cy(252.2008514404297);
+double IntrinsicData[] = {   fx, 0.0,cx, 
                             0.0, fy, cy,
                             0.0, 0.0, 1.0}; 
 
 
 ///// Extrinsic /////
 // Machine Hall  body(IMU) - cam0 //
-double Cam2BodyData[] = {0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
+double Cam0ToBodyData[] = {0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
          0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
         -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
          0.0, 0.0, 0.0, 1.0};
 
+// Machine Hall  body(IMU) - cam1 //
+double Cam1ToBodyData[] = {0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556,
+         0.999598781151, 0.0130119051815, 0.0251588363115, 0.0453689425024,
+        -0.0253898008918, 0.0179005838253, 0.999517347078, 0.00786212447038,
+         0.0, 0.0, 0.0, 1.0};
 
 
+cv::Mat K = GetK(IntrinsicData);
+cv::Point2d c(cx, cy); 
 
 
 // ViconRoom1  body(IMU) - cam0 //
@@ -37,9 +44,9 @@ double Cam2BodyData[] = {0.0148655429818, -0.999880929698, 0.00414029679422, -0.
 
 //////////////////////////////////////////////////////////
 
-cv::Mat GetK(float* IntrinsicData)
+cv::Mat GetK(double* IntrinsicData)
 {
-    cv::Mat K(3, 3, CV_32F, IntrinsicData);
+    cv::Mat K(3, 3, CV_64FC1, IntrinsicData);
     return K;
 }
 
@@ -48,6 +55,31 @@ Eigen::Matrix4d GetCam2Body(double * Cam2BodyData)
     Eigen::Matrix4d Cam2Body = Eigen::Map<Eigen::Matrix4d>(Cam2BodyData);
     return Cam2Body.transpose();
 }
+
+int ReadgtPose(const std::string gtpath, std::vector<Vector6d>* poses)
+{
+    std::ifstream gtFile(gtpath, std::ifstream::in);
+    if(!gtFile.is_open()){
+        std::cout << " gtpose file failed to open " << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    std::string line;
+    while(std::getline(gtFile, line)){
+        std::string value;
+        std::vector<std::string> values;
+
+        std::stringstream ss(line);
+        while(std::getline(ss, value, ' '))
+            values.push_back(value);
+        
+        Vector6d pose;
+        pose << std::stod(values[0]), std::stod(values[1]), std::stod(values[2]), std::stod(values[3]), std::stod(values[4]), std::stod(values[5]);
+        poses->push_back(pose);
+    }       
+
+}
+
 
 std::vector<Eigen::Vector3d> Mat3XdToVec3d(Eigen::Matrix3Xd LidarPoints)
 {
@@ -186,6 +218,16 @@ Eigen::Matrix4d To44RT(std::vector<double> pose)
     return RT;
 }
 
+cv::Mat Vec6To34Mat(Vector6d pose)
+{
+    Eigen::Matrix4d CamPose = To44RT(pose);
+    double data[] = {   CamPose(0, 0), CamPose(0, 1), CamPose(0, 2), CamPose(0, 3),
+                        CamPose(1, 0), CamPose(1, 1), CamPose(1, 2), CamPose(1, 3),
+                        CamPose(2, 0), CamPose(2, 1), CamPose(2, 2), CamPose(2, 3)};
+    cv::Mat Pose34(3, 4, CV_64F, data);
+    return Pose34.clone();
+}
+
 double ToAngle(Eigen::Matrix4d LidarRotation)
 {
     Eigen::Matrix3d rot = LidarRotation.block<3, 3>(0, 0);
@@ -226,4 +268,57 @@ double Rad2Degree(double rad){
 
 double Ddegree2Rad(double degree){
     return degree * M_PI / 180;
+}
+
+std::vector<cv::Point3f> ToXYZ(cv::Mat &X)
+{
+    std::vector<cv::Point3f> MapPts;
+    for (int i = 0 ; i < X.cols; i++)
+    {
+        X.col(i).row(0) = X.col(i).row(0) / X.col(i).row(3);
+        X.col(i).row(1) = X.col(i).row(1) / X.col(i).row(3);
+        X.col(i).row(2) = X.col(i).row(2) / X.col(i).row(3);
+        X.col(i).row(3) = 1;
+        MapPts.push_back(cv::Point3f(X.at<float>(0, i), X.at<float>(1, i), X.at<float>(2, i)));
+    }
+
+    return MapPts;
+}
+    
+
+
+
+std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose)
+{
+    Eigen::Matrix4Xf WorldPoints = HomogeneousForm(WPts);
+    Eigen::Matrix3Xf ImagePoints = HomogeneousForm(ImgPts);
+
+    Eigen::Matrix3Xf ReprojectPoints(3, WorldPoints.cols());
+    Pose = Pose.inverse();
+    Eigen::Matrix4f Pose_ = Pose.cast<float>();
+    Eigen::Matrix<float, 3, 4> PoseRT;
+    PoseRT = Pose_.block<3, 4>(0, 0);
+    Eigen::MatrixXf K_ = Mat2Eigen(K);
+    ReprojectPoints = PoseRT * WorldPoints;
+    // for(int i = 0; i < ReprojectPoints.cols(); i++){
+    //     std::cout << ReprojectPoints(0, i) << " " << ReprojectPoints(1, i) << " " << ReprojectPoints(2, i) << std::endl;
+    // }
+    for(int i = 0; i < ReprojectPoints.cols(); i++){
+        ReprojectPoints(0, i) /= ReprojectPoints(2, i);
+        ReprojectPoints(1, i) /= ReprojectPoints(2, i);
+        ReprojectPoints(2, i) /= ReprojectPoints(2, i);
+    }
+    ReprojectPoints = K_ * ReprojectPoints;
+
+    std::vector<float> ReprojectErr(WorldPoints.cols());
+    for(int i = 0; i < WorldPoints.cols(); i++){
+        ReprojectErr[i] = std::sqrt( (ImagePoints(0, i) - ReprojectPoints(0, i)) * 
+                                     (ImagePoints(0, i) - ReprojectPoints(0, i)) + 
+                                     (ImagePoints(1, i) - ReprojectPoints(1, i)) *
+                                     (ImagePoints(1, i) - ReprojectPoints(1, i)) );
+        // std::cout << ReprojectErr[i] << " ";
+    }
+    std::cout << std::endl;
+
+    return ReprojectErr;
 }

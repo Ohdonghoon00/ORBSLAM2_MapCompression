@@ -88,6 +88,7 @@ int main(int argc, char **argv)
         ORBfeatureAndDescriptor(DB_image, mask_, DBKeypoints_, DBDescriptor_);        
         std::vector<cv::Mat> DBDescriptors = MatToVectorMat(DBDescriptor_);
         db.add(DBDescriptors);
+        std::cout << setprecision(19) << DB->timestamps[i] << std::endl;
     }
     std::cout << db << std::endl;
         
@@ -98,7 +99,7 @@ int main(int argc, char **argv)
     std::string line;
     std::vector<double> timestamps;
     std::vector<cv::Mat> Queryimgs;
-        
+    
     // Load Query Img
     std::cout << " Input Query Img " << std::endl;
     std::string QueryPath = argv[4];

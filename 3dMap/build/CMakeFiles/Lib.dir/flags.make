@@ -6,5 +6,5 @@ CXX_FLAGS = -O3 -DNDEBUG -fPIC
 
 CXX_DEFINES = -DLib_EXPORTS
 
-CXX_INCLUDES = -I/usr/include/eigen3 -isystem /usr/include/opencv -I/home/donghoon/ORBSLAM2_MapCompression/3dMap 
+CXX_INCLUDES = -I/usr/include/eigen3 -isystem /usr/local/include -isystem /usr/local/include/opencv -I/home/donghoon/ORBSLAM2_MapCompression/3dMap 
 

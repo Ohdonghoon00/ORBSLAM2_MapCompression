@@ -49,9 +49,7 @@ target_link_libraries(Lib
 
 
 
-# Euroc Undistortion Img
-add_executable(Undistortion undistortion_euroc.cpp)
-target_link_libraries(Undistortion Lib)
+
 
 # GT pose for Evaluation
 add_executable(GT_trajectory GT_trajectory.cpp)

@@ -137,7 +137,7 @@ int main(int argc, char **argv)
         cv::remap(imRight,imRightRect,M1r,M2r,cv::INTER_LINEAR);
 
         double tframe = vTimeStamp[ni];
-
+        // std::cout << setprecision(18) << tframe << std::endl;
 
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -242,6 +242,7 @@ void LoadImages(const string &strPathLeft, const string &strPathRight, const str
             vstrImageRight.push_back(strPathRight + "/" + ss.str() + ".png");
             double t;
             ss >> t;
+
             vTimeStamps.push_back(t/1e9);
 
         }

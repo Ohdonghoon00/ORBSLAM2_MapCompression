@@ -107,7 +107,7 @@ Eigen::MatrixXf Mat2Eigen(cv::Mat a)
     Eigen::MatrixXf b(a.rows, a.cols);
     for(int i = 0; i < b.rows(); i++){
         for(int j = 0; j < b.cols(); j++){
-            b(i, j) = a.at<float>(i, j);
+            b(i, j) = a.at<double>(i, j);
         }
     }
     return b;

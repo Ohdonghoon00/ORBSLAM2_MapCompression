@@ -6,7 +6,7 @@ find_package(OpenCV 3.2.0 REQUIRED)
 # find_package(Ceres REQUIRED)
 find_package(Pangolin REQUIRED)
 
-
+set(OPENCV_ENABLE_NONFREE)
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 
@@ -45,9 +45,16 @@ target_link_libraries(Lib
   glut    
   )
 
+# Euroc ... Undistortion Img
+add_executable(Undistortion undistortion_euroc.cpp)
+target_link_libraries(Undistortion Lib)
 
 
-# Euroc Undistortion Img
+# Euroc ... CamGtPose
+add_executable(Transform Transform.cpp)
+target_link_libraries(Transform Lib)
+
+# Euroc ... make 3d map DB
 add_executable(main_3dmap main_3dmap.cpp)
 target_link_libraries(main_3dmap Lib)
 
