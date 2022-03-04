@@ -77,3 +77,6 @@ VPStest/Kitti/Thirdparty/g2o/config.h
 VPStest/Kitti/Thirdparty/g2o/lib/
 VPStest/Kitti/Vocabulary/ORBvoc.txt
 VPStest/Kitti/DataBase/
+
+3dMap/build/
+3dMap/DataBase/
