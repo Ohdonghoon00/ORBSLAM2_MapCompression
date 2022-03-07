@@ -662,7 +662,25 @@ namespace ORB_SLAM2
 
     void System::FullBA(std::vector<Eigen::>)
     {
-
+        ceres::Problem global_BA; 
+        for(int j = 0; j < OriginalDB->KFtoMPIdx.size(); j++){
+            for ( int i = 0; i < inlier_storage[j].rows; i++){
+                
+                ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(map_storage.keyframe[j].pts[inlier_storage[j].at<int>(i, 0)], map_storage.keyframe[j].cam_pose, f, cv::Point2d(ORB_SLAM2::Tracking::cx, cy));
+                int id_ = map_storage.keyframe[j].pts_id[inlier_storage[j].at<int>(i, 0)];
+                double* X_ = (double*)(&(map_storage.world_xyz[id_]));
+                global_BA.AddResidualBlock(map_only_cost_func, NULL, X_); 
+                                        
+            } 
+        }
+        ceres::Solver::Options options;
+        options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+        options.num_threads = 8;
+        options.minimizer_progress_to_stdout = false;
+        ceres::Solver::Summary summary;
+        std::cout << " Start optimize map point " << std::endl;
+        ceres::Solve(options, &global_BA, &summary);                
+        std::cout << " End optimize map point " << std::endl;
     }
 
     void System::SaveOriginalDataBase(std::string filepath)
