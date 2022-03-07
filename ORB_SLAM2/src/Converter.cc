@@ -148,4 +148,21 @@ std::vector<float> Converter::toQuaternion(const cv::Mat &M)
     return v;
 }
 
+std::vector<cv::Point2f> Converter::KeyPoint2Point2f(std::vector<cv::KeyPoint> KeyPoints)
+{
+    std::vector<cv::Point2f> pts2f;
+    cv::KeyPoint::convert(KeyPoints, pts2f);
+
+    return pts2f;
+}
+
+cv::Vec6d Converter::EigenVec6dtocv(Vector6d pose)
+{
+    cv::Vec6d camPose;
+    for(int i = 0; i < 6; i++)
+        camPose[i] = pose[i];
+    return camPose;
+}
+
+
 } //namespace ORB_SLAM

@@ -41,6 +41,7 @@
 #include "MapCompressionViewer.h"
 
 class DataBase;
+typedef Eigen::Matrix<double, 6, 1> Vector6d;
 namespace ORB_SLAM2
 {
 
@@ -52,7 +53,7 @@ class LocalMapping;
 class LoopClosing;
 // class DataBase;
 
-typedef Eigen::Matrix<double, 6, 1> Vector6d;
+
 class System
 {
 public:
@@ -136,6 +137,7 @@ public:
     void SavePose(std::string filepath);
     void printMap(std::map<ORB_SLAM2::KeyFrame*,size_t> target_map);
     int ReadgtPose(const std::string gtpath, std::vector<Vector6d>* poses);
+    void FullBA(std::vector<Vector6d> gtPose);
 
 
 

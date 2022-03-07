@@ -10,9 +10,9 @@ MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3 -march=native")
 enable_language(CXX)
-set(EXTRA_LIBS /opt/gurobi912/linux64/lib/libgurobi91.so
-/opt/gurobi912/linux64/lib/libgurobi_c++.a
-/opt/gurobi912/linux64/lib/libgurobi.so.9.1.2
+set(EXTRA_LIBS /opt/gurobi950/linux64/lib/libgurobi95.so
+/opt/gurobi950/linux64/lib/libgurobi_c++.a
+/opt/gurobi950/linux64/lib/libgurobi.so.9.5.0
 )
 
 
@@ -43,7 +43,7 @@ if(NOT OpenCV_FOUND)
    endif()
 endif()
 
-find_package(Eigen3 3.1.0 REQUIRED)
+# find_package(Eigen3 3.3.4 REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(Ceres REQUIRED)
 include_directories(
@@ -51,7 +51,7 @@ ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
 ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
-"/opt/gurobi912/linux64/include/"
+"/opt/gurobi950/linux64/include/"
 )
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)

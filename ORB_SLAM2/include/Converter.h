@@ -26,6 +26,7 @@
 #include<Eigen/Dense>
 #include"Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"
 #include"Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
+#include "System.h"
 
 namespace ORB_SLAM2
 {
@@ -50,6 +51,9 @@ public:
     static Eigen::Matrix<double,3,3> toMatrix3d(const cv::Mat &cvMat3);
 
     static std::vector<float> toQuaternion(const cv::Mat &M);
+    static std::vector<cv::Point2f> KeyPoint2Point2f(std::vector<cv::KeyPoint> KeyPoints);
+    static cv::Vec6d EigenVec6dtocv(Vector6d pose);
+
 };
 
 }// namespace ORB_SLAM

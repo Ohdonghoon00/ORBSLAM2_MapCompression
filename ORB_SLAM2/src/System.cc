@@ -660,16 +660,20 @@ namespace ORB_SLAM2
         std::cout << " Finish Map Compression" << std::endl;
     }
 
-    void System::FullBA(std::vector<Eigen::>)
+    void System::FullBA(std::vector<Vector6d> gtPose)
     {
         ceres::Problem global_BA; 
         for(int j = 0; j < OriginalDB->KFtoMPIdx.size(); j++){
-            for ( int i = 0; i < inlier_storage[j].rows; i++){
+            
+            std::vector<cv::Point2f> KeyPointInMap_ = ORB_SLAM2::Converter::KeyPoint2Point2f(OriginalDB->KeyPointInMap[j]); 
+            cv::Vec6d cameraPose = ORB_SLAM2::Converter::EigenVec6dtocv(gtPose[j]);
+            for ( int i = 0; i < KeyPointInMap_.size(); i++){
                 
-                ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(map_storage.keyframe[j].pts[inlier_storage[j].at<int>(i, 0)], map_storage.keyframe[j].cam_pose, f, cv::Point2d(ORB_SLAM2::Tracking::cx, cy));
-                int id_ = map_storage.keyframe[j].pts_id[inlier_storage[j].at<int>(i, 0)];
-                double* X_ = (double*)(&(map_storage.world_xyz[id_]));
-                global_BA.AddResidualBlock(map_only_cost_func, NULL, X_); 
+                
+                ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(KeyPointInMap_[i], cameraPose, ORB_SLAM2::Frame::fx, cv::Point2d(ORB_SLAM2::Frame::cx, ORB_SLAM2::Frame::cy));
+                int id = OriginalDB->KFtoMPIdx[j][i];
+                double* X = (double*)(&(OriginalDB->Landmarks[id]));
+                global_BA.AddResidualBlock(map_only_cost_func, NULL, X); 
                                         
             } 
         }
@@ -755,7 +759,7 @@ namespace ORB_SLAM2
         std::cout << "  DB kf(kf to map idx) num : " << OriginalDB->KFtoMPIdx.size() << std::endl;
         std::cout << "  DB kf(in map) num : " << OriginalDB->KeyPointInMap.size() << std::endl;
 
-
+        // FullBA();
 
         // std::cout << "  DB (kf to map idx) 2d num : " << OriginalDB->Landmarks.size() << std::endl;
         // std::cout << "  DB (in map) 2d num : " << OriginalDB->Landmarks.size() << std::endl;
@@ -771,7 +775,7 @@ namespace ORB_SLAM2
         oa << OriginalDB;
         out.close();
     }
-
+    
     int System::ReadgtPose(const std::string gtpath, std::vector<Vector6d>* poses)
     {
         std::ifstream gtFile(gtpath, std::ifstream::in);
