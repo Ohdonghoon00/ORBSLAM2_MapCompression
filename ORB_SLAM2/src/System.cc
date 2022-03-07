@@ -21,6 +21,7 @@
 #include "System.h"
 #include "Converter.h"
 #include "gurobi_helper.h"
+#include "BA.h"
 #include "DataBase.h"
 #include "BoostArchiver.h"
 #include <thread>
@@ -659,6 +660,11 @@ namespace ORB_SLAM2
         std::cout << " Finish Map Compression" << std::endl;
     }
 
+    void System::FullBA(std::vector<Eigen::>)
+    {
+
+    }
+
     void System::SaveOriginalDataBase(std::string filepath)
     {
 
@@ -731,6 +737,8 @@ namespace ORB_SLAM2
         std::cout << "  DB kf(kf to map idx) num : " << OriginalDB->KFtoMPIdx.size() << std::endl;
         std::cout << "  DB kf(in map) num : " << OriginalDB->KeyPointInMap.size() << std::endl;
 
+
+
         // std::cout << "  DB (kf to map idx) 2d num : " << OriginalDB->Landmarks.size() << std::endl;
         // std::cout << "  DB (in map) 2d num : " << OriginalDB->Landmarks.size() << std::endl;
         // std::cout << OriginalDB->GetObservationCount(5) << std::endl;
@@ -746,7 +754,29 @@ namespace ORB_SLAM2
         out.close();
     }
 
-       
+    int System::ReadgtPose(const std::string gtpath, std::vector<Vector6d>* poses)
+    {
+        std::ifstream gtFile(gtpath, std::ifstream::in);
+        if(!gtFile.is_open()){
+            std::cout << " gtpose file failed to open " << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        std::string line;
+        while(std::getline(gtFile, line)){
+            std::string value;
+            std::vector<std::string> values;
+
+            std::stringstream ss(line);
+            while(std::getline(ss, value, ' '))
+                values.push_back(value);
+            
+            Vector6d pose;
+            pose << std::stod(values[0]), std::stod(values[1]), std::stod(values[2]), std::stod(values[3]), std::stod(values[4]), std::stod(values[5]);
+            poses->push_back(pose);
+        }       
+
+    }       
                
         
 

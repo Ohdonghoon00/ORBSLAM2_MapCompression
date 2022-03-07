@@ -183,6 +183,12 @@ int main(int argc, char **argv)
     cout << "median tracking time: " << vTimesTrack[nImages/2] << endl;
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
+    // Load Euroc GT pose
+    std::string EurocGTPath = "/home/donghoon/ORBSLAM2_MapCompression/ORB_SLAM2/Examples/Stereo/MH01_Cam0Pose.txt";
+    std::vector<Vector6d> EurocgtPoses;
+    ReadgtPose(EurocGTPath, EurocgtPoses);
+    
+
     // Save camera trajectory
     SLAM.SaveTrajectoryTUM("EurocMH03_Trajectory.txt");
 

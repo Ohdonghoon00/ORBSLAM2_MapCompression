@@ -52,6 +52,7 @@ class LocalMapping;
 class LoopClosing;
 // class DataBase;
 
+typedef Eigen::Matrix<double, 6, 1> Vector6d;
 class System
 {
 public:
@@ -134,6 +135,7 @@ public:
     void SaveCompressedDataBase(std::vector<GRBVar> x, std::string filepath);
     void SavePose(std::string filepath);
     void printMap(std::map<ORB_SLAM2::KeyFrame*,size_t> target_map);
+    int ReadgtPose(const std::string gtpath, std::vector<Vector6d>* poses);
 
 
 
