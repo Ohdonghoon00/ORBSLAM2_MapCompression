@@ -85,8 +85,9 @@ int main(int argc, char** argv)
 
     // Save Pose
     std::ofstream gtCamPose;
-    gtCamPose.open("MH03_Cam1Pose.txt");
-    
+    gtCamPose.open("MH01_Cam0Pose.txt");
+    int cnt = 0;
+    int initialIdx = -1;
     for(int i = 0; i < CamTimestamps.size(); i++){
 
         int Minidx = -1;
@@ -101,22 +102,23 @@ int main(int argc, char** argv)
         }
 
         if(Minvalue > 1000) continue;
-
+        if(cnt == 0) initialIdx = Minidx;
         std::string CamTimestampsImgPath = std::to_string(int64_t(CamTimestamps[i]));
-        std::string imgPath = "/home/donghoon/ORBSLAM2_MapCompression/3dMap/DataBase/Euroc/MH03/RectCam1/" + CamTimestampsImgPath + ".png";
-        cv::Mat image = cv::imread(imgPath);
+        // std::string imgPath = "/home/donghoon/ORBSLAM2_MapCompression/3dMap/DataBase/Euroc/MH01/RectCam0/" + CamTimestampsImgPath + ".png";
+        // cv::Mat image = cv::imread(imgPath);
         
-        std::string SortImgPath = "/home/donghoon/ORBSLAM2_MapCompression/3dMap/DataBase/Euroc/MH03/RectCam1Sort/" + CamTimestampsImgPath + ".png";
-        cv::imwrite(SortImgPath, image );
+        // std::string SortImgPath = "/home/donghoon/ORBSLAM2_MapCompression/3dMap/DataBase/Euroc/MH01/RectCam1Sort/" + CamTimestampsImgPath + ".png";
+        // cv::imwrite(SortImgPath, image );
         
         std::cout << i << " " << Minidx << " " << Minvalue << std::endl;
-
+        Eigen::Matrix4d Cam2Body = GetCam2Body(Cam0ToBodyData);
+        Eigen::Matrix4d initialPose = To44RT(GTImuPoses[initialIdx]) * Cam2Body;
         Eigen::Matrix4d GtImu44poses = To44RT(GTImuPoses[Minidx]);
-        Eigen::Matrix4d Cam2Body = GetCam2Body(Cam1ToBodyData);
-        Eigen::Matrix4d camSLAMPoses = GtImu44poses * Cam2Body;        
+        Eigen::Matrix4d camSLAMPoses = initialPose.inverse() * GtImu44poses * Cam2Body;        
         Vector6d pose = To6DOF(camSLAMPoses);
 
         gtCamPose << CamTimestampsImgPath << " " << pose[0] << " " << pose[1] << " " << pose[2] << " " << pose[3] << " " << pose[4] << " " << pose[5] << std::endl;
+        cnt++;
     }
         // for(int j = 0; j < ImuTimestamps.size(); j++){
         

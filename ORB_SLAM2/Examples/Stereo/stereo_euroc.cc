@@ -184,46 +184,47 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Load Euroc GT pose
-    std::string EurocGTPath = "/home/donghoon/ORBSLAM2_MapCompression/ORB_SLAM2/Examples/Stereo/MH01_Cam0Pose.txt";
+    std::string EurocGTPath = "/home/ohdonghoon/ORBSLAM2_MapCompression/ORB_SLAM2/Examples/Stereo/MH01_Cam0Pose.txt";
     std::vector<Vector6d> EurocgtPoses;
-    SLAM.ReadgtPose(EurocGTPath, &EurocgtPoses);
-    
+    std::vector<double> timeStamps;
+    SLAM.ReadgtPose(EurocGTPath, &EurocgtPoses, &timeStamps);
+    std::cout << "EurocgtPoses size : " << EurocgtPoses.size() << std::endl;
 
-    // Save camera trajectory
-    SLAM.SaveTrajectoryTUM("EurocMH03_Trajectory.txt");
+    //Save camera trajectory
+    SLAM.SaveTrajectoryTUM("EurocMH01_Trajectory.txt");
 
     // Save Camera Keyframe Trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("EurocMH03_Keyframe_Trajectory.txt");
+    SLAM.SaveKeyFrameTrajectoryTUM("EurocMH01_Keyframe_Trajectory.txt");
 
     // Save in Original Database.h
-    SLAM.SaveOriginalDataBase("EurocMH03_DB_original.bin");
+    SLAM.SaveOriginalDataBase("EurocMH01_DB_original.bin", EurocgtPoses, timeStamps);
     
-    // Map Compression
-    SLAM.MapCompression2(0.7, "EurocMH03_DB_70%.bin");
+    // // Map Compression
+    // SLAM.MapCompression2(0.7, "EurocMH01_DB_70%.bin");
 
-    // Save in Compressed Database.h
-    // SLAM.SaveCompressedDataBase("EurocMH03_DB_70%.bin"); // 0.7
+    // // Save in Compressed Database.h
+    // // SLAM.SaveCompressedDataBase("EurocMH01_DB_70%.bin"); // 0.7
 
-    // Map Compression
-    SLAM.MapCompression2(0.5, "EurocMH03_DB_50%.bin");
+    // // Map Compression
+    // SLAM.MapCompression2(0.5, "EurocMH01_DB_50%.bin");
 
-    // Save in Compressed Database.h
-    // SLAM.SaveDataBase("EurocMH03_DB_50%.bin"); // 0.7 * 0.7 = 0.49
+    // // Save in Compressed Database.h
+    // // SLAM.SaveDataBase("EurocMH01_DB_50%.bin"); // 0.7 * 0.7 = 0.49
 
-    // Map Compression
-    SLAM.MapCompression2(0.35, "EurocMH03_DB_35%.bin");
+    // // Map Compression
+    // SLAM.MapCompression2(0.35, "EurocMH01_DB_35%.bin");
 
-    // Save in Compressed Database.h
-    // SLAM.SaveDataBase("EurocMH03_DB_35%.bin"); // 0.7 ^ 3 = 0.343
+    // // Save in Compressed Database.h
+    // // SLAM.SaveDataBase("EurocMH01_DB_35%.bin"); // 0.7 ^ 3 = 0.343
 
-    // Map Compression
-    SLAM.MapCompression2(0.2, "EurocMH03_DB_20%.bin");
+    // // Map Compression
+    // SLAM.MapCompression2(0.2, "EurocMH01_DB_20%.bin");
 
-    // Save in Compressed Database.h
-    // SLAM.SaveDataBase("EurocMH03_DB_20%.bin"); // 0.343 * 0.6 = 0.2038
+    // // Save in Compressed Database.h
+    // // SLAM.SaveDataBase("EurocMH01_DB_20%.bin"); // 0.343 * 0.6 = 0.2018
 
-    // Save Timestamp + Trajectory result to # time tx ty tz qx qy qz qw
-    SLAM.SavePose("EurocMH03_DB_Trajectory_result.txt");
+    // // Save Timestamp + Trajectory result to # time tx ty tz qx qy qz qw
+    // SLAM.SavePose("EurocMH01_DB_Trajectory_result.txt");
 
     return 0;
 }

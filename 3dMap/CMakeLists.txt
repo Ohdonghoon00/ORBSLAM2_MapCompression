@@ -3,7 +3,7 @@ project(VPStest)
 set(CMAKE_BUILD_TYPE Release)
 # find_package(OpenCV REQUIRED )
 find_package(OpenCV 3.2.0 REQUIRED)
-# find_package(Ceres REQUIRED)
+find_package(Ceres REQUIRED)
 find_package(Pangolin REQUIRED)
 
 set(OPENCV_ENABLE_NONFREE)
@@ -59,7 +59,8 @@ add_executable(main_3dmap main_3dmap.cpp)
 target_link_libraries(main_3dmap Lib)
 
 
-
+add_executable(BA BA.cpp)
+target_link_libraries(BA Lib Ceres::ceres)
 
 
 

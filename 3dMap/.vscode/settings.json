@@ -74,6 +74,7 @@
         "ios": "cpp",
         "locale": "cpp",
         "queue": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "unordered_set": "cpp"
     }
 }

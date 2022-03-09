@@ -55,6 +55,7 @@ double Rad2Degree(double rad);
 double Ddegree2Rad(double degree);
 std::vector<cv::Point3f> ToXYZ(cv::Mat &X);
 std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose);
+int FindTimestampIdx(const double a, const std::vector<double> b);
 
 // namespace constants
 // {

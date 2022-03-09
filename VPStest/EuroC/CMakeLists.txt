@@ -82,4 +82,3 @@ target_link_libraries(Query_one_Image Lib)
 
 
 
-

@@ -82,6 +82,12 @@ namespace boost{
         ar & p.y;
         ar & p.z;
     }
+    template<class Archive>
+    void serialize(Archive& ar, ::cv::Point3d &p, const unsigned int version){
+        ar & p.x;
+        ar & p.y;
+        ar & p.z;
+    }
     }
 }
 // TODO: boost::iostream zlib compressed binary format

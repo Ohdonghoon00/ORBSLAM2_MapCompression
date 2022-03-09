@@ -316,9 +316,24 @@ std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<
                                      (ImagePoints(0, i) - ReprojectPoints(0, i)) + 
                                      (ImagePoints(1, i) - ReprojectPoints(1, i)) *
                                      (ImagePoints(1, i) - ReprojectPoints(1, i)) );
-        // std::cout << ReprojectErr[i] << " ";
+        std::cout << ReprojectErr[i] << " ";
     }
     std::cout << std::endl;
 
     return ReprojectErr;
+}
+
+int FindTimestampIdx(const double a, const std::vector<double> b)
+{
+    double MinVal = DBL_MAX;
+    int MinIdx = -1;
+
+    for(int i = 0; i < b.size(); i++){
+        double diff = std::fabs(b[i] - a);
+        if(diff < MinVal){
+            MinVal = diff;
+            MinIdx = i;
+        }
+    }
+    return MinIdx;
 }

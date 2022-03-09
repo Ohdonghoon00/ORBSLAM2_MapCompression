@@ -2,8 +2,8 @@
 #include "ceres/ceres.h"
 #include "ceres/rotation.h"
 #include <opencv2/opencv.hpp>
-#include "System.h"
 #include<Eigen/Dense>
+#include "utils.h"
 
 struct ReprojectionError
 {
@@ -156,7 +156,7 @@ struct map_point_only_ReprojectionError_scale
 
 struct map_point_only_ReprojectionError
 {
-    map_point_only_ReprojectionError(const cv::Point2f& _x, const cv::Vec6d& _camera, double _f, const cv::Point2d& _c) : x(_x), _camera(_camera), f(_f), c(_c) {}
+    map_point_only_ReprojectionError(const cv::Point2f& _x, const Vector6d& _camera, double _f, const cv::Point2d& _c) : x(_x), _camera(_camera), f(_f), c(_c) {}
 
     template <typename T>
     bool operator()(const T* const point, T* residuals) const
@@ -170,6 +170,9 @@ struct map_point_only_ReprojectionError
         camera[0] = T(_camera[0]); 
         camera[1] = T(_camera[1]);
         camera[2] = T(_camera[2]);
+        camera[3] = T(_camera[3]);
+        camera[4] = T(_camera[4]);
+        camera[5] = T(_camera[5]);
         
         T X[3];
         ceres::AngleAxisRotatePoint(camera, point, X);
@@ -193,14 +196,72 @@ struct map_point_only_ReprojectionError
         return true;
     }
 
-    static ceres::CostFunction* create (const cv::Point2f& _x, const cv::Vec6d& _camera, double _f, const cv::Point2d& _c)
+    static ceres::CostFunction* create (const cv::Point2f& _x, const Vector6d& _camera, double _f, const cv::Point2d& _c)
     {
         return (new ceres::AutoDiffCostFunction<map_point_only_ReprojectionError, 2, 3>(new map_point_only_ReprojectionError(_x, _camera, _f, _c)));
     }
 
     private:
         const cv::Point2f x;
-        const cv::Vec6d _camera;
+        const Vector6d _camera;
         const double f;
         const cv::Point2d c;
 };
+
+
+    int ReadgtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps)
+    {
+        std::ifstream gtFile(gtpath, std::ifstream::in);
+        if(!gtFile.is_open()){
+            std::cout << " gtpose file failed to open " << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        std::string line;
+        while(std::getline(gtFile, line)){
+            std::string value;
+            std::vector<std::string> values;
+
+            std::stringstream ss(line);
+            while(std::getline(ss, value, ' '))
+                values.push_back(value);
+            
+            Vector6d pose;
+            pose << std::stod(values[1]), std::stod(values[2]), std::stod(values[3]), std::stod(values[4]), std::stod(values[5]), std::stod(values[6]);
+            poses->push_back(pose);
+            timeStamps->push_back(std::stod(values[0])/1e9);
+        }       
+
+    }
+
+int ReadKFPose(std::string KFpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps)
+{
+    std::ifstream KFfile(KFpath, std::ifstream::in);
+    if(!KFfile.is_open()){
+        std::cout << " KFpose file failed to open " << std::endl;
+            return EXIT_FAILURE;
+    }
+
+        std::string line;
+        while(std::getline(KFfile, line)){
+            std::string value;
+            std::vector<std::string> values;
+
+            std::stringstream ss(line);
+            while(std::getline(ss, value, ' '))
+                values.push_back(value);
+            
+            Eigen::Quaterniond q;
+            q.x() = std::stod(values[4]);
+            q.y() = std::stod(values[5]);
+            q.z() = std::stod(values[6]);
+            q.w() = std::stod(values[7]);
+
+            Eigen::Vector3d t;
+            t << std::stod(values[1]), std::stod(values[2]), std::stod(values[3]);
+
+            Vector6d pose = To6DOF(q, t); 
+            poses->push_back(pose);
+            timeStamps->push_back(std::stod(values[0]));
+        }     
+}    

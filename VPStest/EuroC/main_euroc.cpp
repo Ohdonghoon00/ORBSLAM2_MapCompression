@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 
 
 
-        // cv::waitKey();
+        cv::waitKey();
         
         image_num++;
         std::cout << std::endl;

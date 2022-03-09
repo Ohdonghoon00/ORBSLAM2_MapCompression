@@ -660,22 +660,25 @@ namespace ORB_SLAM2
         std::cout << " Finish Map Compression" << std::endl;
     }
 
-    void System::FullBA(std::vector<Vector6d> gtPose)
-    {
+    void System::FullBA(const std::vector<Vector6d> gtPose, const std::vector<double> timeStamps)
+    {   
+        double fx = (double)ORB_SLAM2::Frame::fx;
+        double cx = (double)ORB_SLAM2::Frame::cx;
+        double cy = (double)ORB_SLAM2::Frame::cy;
         ceres::Problem global_BA; 
         for(int j = 0; j < OriginalDB->KFtoMPIdx.size(); j++){
-            
-            std::vector<cv::Point2f> KeyPointInMap_ = ORB_SLAM2::Converter::KeyPoint2Point2f(OriginalDB->KeyPointInMap[j]); 
-            cv::Vec6d cameraPose = ORB_SLAM2::Converter::EigenVec6dtocv(gtPose[j]);
+            std::vector<cv::Point2f> KeyPointInMap_ = ORB_SLAM2::Converter::KeyPoint2Point2f(OriginalDB->KeyPointInMap[j]);
+            int Idx = FindTimestampIdx(OriginalDB->timestamps[j], timeStamps);
+            cv::Vec6d CamPose(gtPose[Idx][0], gtPose[Idx][1], gtPose[Idx][2], gtPose[Idx][3], gtPose[Idx][4], gtPose[Idx][5]);
             for ( int i = 0; i < KeyPointInMap_.size(); i++){
-                
-                
-                ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(KeyPointInMap_[i], cameraPose, ORB_SLAM2::Frame::fx, cv::Point2d(ORB_SLAM2::Frame::cx, ORB_SLAM2::Frame::cy));
+                // std::cout << KeyPointInMap_[i] << " ";
+                ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(KeyPointInMap_[i], CamPose, fx, cv::Point2d(cx, cy));
                 int id = OriginalDB->KFtoMPIdx[j][i];
                 double* X = (double*)(&(OriginalDB->Landmarks[id]));
                 global_BA.AddResidualBlock(map_only_cost_func, NULL, X); 
-                                        
+                std::cout << OriginalDB->Landmarks[id] << " ";             
             } 
+            std::cout << std::endl;
         }
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::ITERATIVE_SCHUR;
@@ -683,11 +686,12 @@ namespace ORB_SLAM2
         options.minimizer_progress_to_stdout = false;
         ceres::Solver::Summary summary;
         std::cout << " Start optimize map point " << std::endl;
-        ceres::Solve(options, &global_BA, &summary);                
+        ceres::Solve(options, &global_BA, &summary);
+        std::cout << summary.BriefReport() << std::endl;                
         std::cout << " End optimize map point " << std::endl;
     }
 
-    void System::SaveOriginalDataBase(std::string filepath)
+    void System::SaveOriginalDataBase(std::string filepath, const std::vector<Vector6d> gtPose, const std::vector<double> timeStamps)
     {
 
         // DataBase.h
@@ -705,7 +709,7 @@ namespace ORB_SLAM2
             
             // std::cout <<  DB->KeyPointInMap[i].size() << "  " << DB->KFtoMPIdx[i].size() << std::endl;
             std::set<MapPoint*> KFMapPoints = AllKFptr[i]->GetMapPoints();
-            std::cout << "KF num : " << i << " map points num : " << KFMapPoints.size() << std::endl;
+            // std::cout << "KF num : " << i << " map points num : " << KFMapPoints.size() << std::endl;
             
             for(auto j : KFMapPoints){
 
@@ -715,7 +719,7 @@ namespace ORB_SLAM2
                 cv::KeyPoint Point2d = AllKFptr[i]->mvKeys[KeypointIdx];
                 OriginalDB->KeyPointInMap[i].push_back(Point2d);
                 
-                cv::Point3f mp;
+                cv::Point3d mp;
                 mp.x = (j->GetWorldPos()).at<float>(0, 0);
                 mp.y = (j->GetWorldPos()).at<float>(1, 0);
                 mp.z = (j->GetWorldPos()).at<float>(2, 0);
@@ -726,6 +730,7 @@ namespace ORB_SLAM2
                     if(mp == OriginalDB->Landmarks[k]){
                         InKF = true;
                         Mpid = k;
+                        std::cout << "SameLandMark!!" <<std::endl;
                     }
                 }
                      
@@ -754,13 +759,17 @@ namespace ORB_SLAM2
         std::cout << "  DB landmark num : " << OriginalDB->Landmarks.size() << std::endl;
 
         for(int i = 0; i < OriginalDB->KFtoMPIdx.size(); i++){
-            std::cout << " kf num : " << i << " point num : " << OriginalDB->KFtoMPIdx[i].size() << std::endl;
+            // std::cout << " kf num : " << i << " point num : " << OriginalDB->KFtoMPIdx[i].size() << std::endl;
         }
         std::cout << "  DB kf(kf to map idx) num : " << OriginalDB->KFtoMPIdx.size() << std::endl;
         std::cout << "  DB kf(in map) num : " << OriginalDB->KeyPointInMap.size() << std::endl;
-
-        // FullBA();
-
+        
+        std::cout << "landmark : " << OriginalDB->Landmarks[5000] << std::endl;
+        // Full BA
+        std::cout << "Full BA ing ..... " << std::endl;
+        // FullBA(gtPose, timeStamps);
+        std::cout << "Finish Full BA ! " << std::endl;
+        std::cout << "landmark : " << OriginalDB->Landmarks[5000] << std::endl;
         // std::cout << "  DB (kf to map idx) 2d num : " << OriginalDB->Landmarks.size() << std::endl;
         // std::cout << "  DB (in map) 2d num : " << OriginalDB->Landmarks.size() << std::endl;
         // std::cout << OriginalDB->GetObservationCount(5) << std::endl;
@@ -776,7 +785,7 @@ namespace ORB_SLAM2
         out.close();
     }
     
-    int System::ReadgtPose(const std::string gtpath, std::vector<Vector6d>* poses)
+    int System::ReadgtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps)
     {
         std::ifstream gtFile(gtpath, std::ifstream::in);
         if(!gtFile.is_open()){
@@ -794,8 +803,9 @@ namespace ORB_SLAM2
                 values.push_back(value);
             
             Vector6d pose;
-            pose << std::stod(values[0]), std::stod(values[1]), std::stod(values[2]), std::stod(values[3]), std::stod(values[4]), std::stod(values[5]);
+            pose << std::stod(values[1]), std::stod(values[2]), std::stod(values[3]), std::stod(values[4]), std::stod(values[5]), std::stod(values[6]);
             poses->push_back(pose);
+            timeStamps->push_back(std::stod(values[0])/1e9);
         }       
 
     }       
@@ -834,6 +844,21 @@ namespace ORB_SLAM2
     {
         for (std::map<ORB_SLAM2::KeyFrame *, size_t>::iterator Iter = target_map.begin(); Iter != target_map.end(); ++Iter)
             std::cout << Iter->first->mnId << "   " << Iter->second << std::endl;
+    }
+
+    int System::FindTimestampIdx(const double a, const std::vector<double> b)
+    {
+        double MinVal = DBL_MAX;
+        int MinIdx = -1;
+
+        for(int i = 0; i < b.size(); i++){
+            double diff = std::fabs(b[i] - a);
+            if(diff < MinVal){
+                MinVal = diff;
+                MinIdx = i;
+            }
+        }
+        return MinIdx;
     }
 
 } // namespace ORB_SLAM
