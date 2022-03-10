@@ -63,7 +63,7 @@ int main(int argc, char** argv)
         }
         glFlush();
     // std::vector<float> ReprojErr = ReprojectionError(Landmarksf, imgPoints, gtPose);
-
+        
         ceres::Problem global_BA; 
         for(int j = 0; j < DB->KFtoMPIdx.size(); j++){
             
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
             
             // int poseIdx = FindTimestampIdx(DB->timestamps[j], timeStamps);
             int poseIdx = j;
-
+            
             for ( int i = 0; i < imgPoints.size(); i++){
                 // std::cout << KeyPointInMap_[i] << " ";
                 ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(imgPoints[i], EurocgtPoses[poseIdx], fx, cv::Point2d(cx, cy));
@@ -93,7 +93,9 @@ int main(int argc, char** argv)
         std::cout << summary.BriefReport() << std::endl;                
         std::cout << " End optimize map point " << std::endl;
         std::cout << DB->Landmarks[1000] << std::endl;
-        
+        std::cout << fx << std::endl;
+        std::cout << cx << std::endl;
+        std::cout << cy << std::endl;
         
         glClear(GL_COLOR_BUFFER_BIT);
         for(int i = 0; i < DB->Landmarks.size(); i++){
