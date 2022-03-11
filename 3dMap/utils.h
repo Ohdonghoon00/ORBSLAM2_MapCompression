@@ -47,6 +47,7 @@ Eigen::Matrix4d To44RT(std::vector<double> pose);
 cv::Mat Vec6To34Mat(Vector6d pose);
 double ToAngle(Eigen::Matrix4d LidarRotation);
 Eigen::Vector3d ToAxis(Eigen::Matrix4d LidarRotation);
+Vector6d ToProjection(Vector6d pose);
 float VerticalAngle(Eigen::Vector3d p);
 double PointDistance(Eigen::Vector3d p);
 double PointDistance(Eigen::Vector3d p1, Eigen::Vector3d p2);
@@ -56,6 +57,7 @@ double Ddegree2Rad(double degree);
 std::vector<cv::Point3f> ToXYZ(cv::Mat &X);
 std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose);
 int FindTimestampIdx(const double a, const std::vector<double> b);
+int readCsvGtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps);
 
 // namespace constants
 // {

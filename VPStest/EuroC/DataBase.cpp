@@ -38,7 +38,7 @@ std::vector<cv::Point3f> DataBase::GetKF3dPoint(int idx)
     std::vector<cv::Point3f> KFLandmark;
     KFLandmark.resize(KFtoMPIdx[idx].size());
     for(size_t i = 0; i < KFtoMPIdx[idx].size(); i++){
-        cv::Point3f landmark3dpoint(Landmarks[KFtoMPIdx[idx][i]]); 
+        cv::Point3f landmark3dpoint((float)Landmarks[KFtoMPIdx[idx][i]].x, (float)Landmarks[KFtoMPIdx[idx][i]].y, (float)Landmarks[KFtoMPIdx[idx][i]].z); 
         KFLandmark[i] = landmark3dpoint;
     }
 

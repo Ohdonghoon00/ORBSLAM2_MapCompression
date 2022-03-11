@@ -246,6 +246,14 @@ Eigen::Vector3d ToAxis(Eigen::Matrix4d LidarRotation)
     return Axis;
 }
 
+Vector6d ToProjection(Vector6d pose)
+{
+    Eigen::Matrix4d pos = To44RT(pose);
+    pos = pos.inverse();
+    Vector6d proj = To6DOF(pos);
+    return proj;
+}
+
 float VerticalAngle(Eigen::Vector3d p){
   return atan(p.z() / sqrt(p.x() * p.x() + p.y() * p.y())) * 180 / M_PI;
 }
@@ -337,3 +345,41 @@ int FindTimestampIdx(const double a, const std::vector<double> b)
     }
     return MinIdx;
 }
+
+    int readCsvGtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps)
+    {
+        std::ifstream gtFile(gtpath, std::ifstream::in);
+        if(!gtFile.is_open()){
+            std::cout << " gtpose file failed to open " << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        int lineNum = 0;
+        std::string line;
+        while(std::getline(gtFile, line)){
+            if(lineNum == 0){
+                lineNum++;
+                continue;
+            }
+            std::string value;
+            std::vector<std::string> values;
+
+            std::stringstream ss(line);
+            while(std::getline(ss, value, ','))
+                values.push_back(value);
+            
+            Eigen::Quaterniond q;
+            q.x() = std::stod(values[5]);
+            q.y() = std::stod(values[6]);
+            q.z() = std::stod(values[7]);
+            q.w() = std::stod(values[4]);
+
+            Eigen::Vector3d t;
+            t << std::stod(values[1]), std::stod(values[2]),std::stod( values[3]);
+            Vector6d Pose = To6DOF(q, t);
+            poses->push_back(Pose);
+            // double timestamp = std::floor(std::stod(values[0]) * 1e5) * 1e-5;
+            timeStamps->push_back(std::stod(values[0]));
+        }       
+
+    }

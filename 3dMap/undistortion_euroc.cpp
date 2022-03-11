@@ -74,7 +74,7 @@ int main(int argc, char **argv)
         ss << line;
         std::string QueryImgsPath = QueryPath + "/" + ss.str() +".png";
         cv::Mat img = cv::imread(QueryImgsPath);
-        std::string RectimgName_ = "/home/donghoon/ORBSLAM2_MapCompression/3dMap/DataBase/Euroc/MH03/RectCam1";
+        std::string RectimgName_ = "/home/ohdonghoon/ORBSLAM2_MapCompression/VPStest/EuroC/DataBase/EuroC/MH03/RectCam0";
         std::string RectimgName = RectimgName_ + "/" + ss.str() +".png";
         cv::Mat imLeftRect;
         cv::remap(img,imLeftRect,M1l,M2l,cv::INTER_LINEAR);

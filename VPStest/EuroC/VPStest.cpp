@@ -155,7 +155,7 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
     std::cout << MaxInlierIdx << std::endl;
 
 
-    if(MaxRatioIdx == MaxInlierIdx && MaxInlier > 30)
+    if( MaxInlier > 40)
         return CandidateKFid[MaxInlierIdx];
     else
         return -1;

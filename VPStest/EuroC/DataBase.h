@@ -16,7 +16,7 @@ public:
     
 
     // Map info
-    std::map< int, cv::Point3f > Landmarks;
+    std::map< int, cv::Point3d > Landmarks;
     std::map< int, cv::Mat> Descriptors;
 
 
