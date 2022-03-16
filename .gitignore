@@ -80,3 +80,6 @@ VPStest/Kitti/DataBase/
 
 3dMap/build/
 3dMap/DataBase/
+
+Compression/build/
+Compression/DataBase/
