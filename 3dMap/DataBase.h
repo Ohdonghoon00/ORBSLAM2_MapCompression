@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include "BoostArchiver.h"
+#include "Parameter.h"
 
 
 
@@ -24,9 +25,13 @@ public:
     std::map< int, std::vector< int > > KFtoMPIdx; // KFid - MPidx
     std::map< int, std::vector< cv::KeyPoint > > KeyPointInMap; 
     std::vector<double> timestamps;
+    std::map< int, Vector6d > kfPoses;
 
     // Keyframe Img
     std::vector<cv::Mat> LeftKFimg, RightKFimg;
+
+    // for LoopClosure
+    std::map< int, cv::Mat > dbow2Descriptors;
 
     friend class boost::serialization::access;
     template<class Archive>

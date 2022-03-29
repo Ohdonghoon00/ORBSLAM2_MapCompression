@@ -30,18 +30,18 @@ utils.cpp
 DataBase.cpp
 ORBextractor.cc
 map_viewer.cpp
- )
+)
 
 target_link_libraries(Lib
-  
-  ${OpenCV_LIBS}
+
+${OpenCV_LIBS}
+${BOOST_SERIALIZATION}
   # ${Pangolin_LIBRARIES}
-  ${BOOST_SERIALIZATION}
   # ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
   #   Ceres::ceres
   #   glog
   GL
-  GLU
+  GLU 
   glut    
   )
 

@@ -30,9 +30,10 @@
 #include "KeyFrameDatabase.h"
 #include <Eigen/Dense>
 #include <mutex>
+#include "Converter.h"
 
 // dh
-typedef Eigen::Matrix<double, 6, 1> Vector6d;
+// typedef Eigen::Matrix<double, 6, 1> Vector6d;
 extern std::vector<double> gtTimeStamps;
 extern std::vector<Vector6d> gtPose;
 extern std::string gtPath;

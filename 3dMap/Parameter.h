@@ -6,3 +6,5 @@
     
 
 
+typedef Eigen::Matrix<float, 6, 1> Vector6f;
+typedef Eigen::Matrix<double, 6, 1> Vector6d;

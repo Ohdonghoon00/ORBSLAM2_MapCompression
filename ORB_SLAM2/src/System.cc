@@ -660,36 +660,36 @@ namespace ORB_SLAM2
         std::cout << " Finish Map Compression" << std::endl;
     }
 
-    void System::FullBA(const std::vector<Vector6d> gtPose, const std::vector<double> timeStamps)
-    {   
-        double fx = (double)ORB_SLAM2::Frame::fx;
-        double cx = (double)ORB_SLAM2::Frame::cx;
-        double cy = (double)ORB_SLAM2::Frame::cy;
-        ceres::Problem global_BA; 
-        for(int j = 0; j < OriginalDB->KFtoMPIdx.size(); j++){
-            std::vector<cv::Point2f> KeyPointInMap_ = ORB_SLAM2::Converter::KeyPoint2Point2f(OriginalDB->KeyPointInMap[j]);
-            int Idx = FindTimestampIdx(OriginalDB->timestamps[j], timeStamps);
-            cv::Vec6d CamPose(gtPose[Idx][0], gtPose[Idx][1], gtPose[Idx][2], gtPose[Idx][3], gtPose[Idx][4], gtPose[Idx][5]);
-            for ( int i = 0; i < KeyPointInMap_.size(); i++){
-                // std::cout << KeyPointInMap_[i] << " ";
-                ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(KeyPointInMap_[i], CamPose, fx, cv::Point2d(cx, cy));
-                int id = OriginalDB->KFtoMPIdx[j][i];
-                double* X = (double*)(&(OriginalDB->Landmarks[id]));
-                global_BA.AddResidualBlock(map_only_cost_func, NULL, X); 
-                std::cout << OriginalDB->Landmarks[id] << " ";             
-            } 
-            std::cout << std::endl;
-        }
-        ceres::Solver::Options options;
-        options.linear_solver_type = ceres::ITERATIVE_SCHUR;
-        options.num_threads = 8;
-        options.minimizer_progress_to_stdout = false;
-        ceres::Solver::Summary summary;
-        std::cout << " Start optimize map point " << std::endl;
-        ceres::Solve(options, &global_BA, &summary);
-        std::cout << summary.BriefReport() << std::endl;                
-        std::cout << " End optimize map point " << std::endl;
-    }
+    // void System::FullBA(const std::vector<Vector6d> gtPose, const std::vector<double> timeStamps)
+    // {   
+    //     double fx = (double)ORB_SLAM2::Frame::fx;
+    //     double cx = (double)ORB_SLAM2::Frame::cx;
+    //     double cy = (double)ORB_SLAM2::Frame::cy;
+    //     ceres::Problem global_BA; 
+    //     for(int j = 0; j < OriginalDB->KFtoMPIdx.size(); j++){
+    //         std::vector<cv::Point2f> KeyPointInMap_ = ORB_SLAM2::Converter::KeyPoint2Point2f(OriginalDB->KeyPointInMap[j]);
+    //         int Idx = FindTimestampIdx(OriginalDB->timestamps[j], timeStamps);
+    //         cv::Vec6d CamPose(gtPose[Idx][0], gtPose[Idx][1], gtPose[Idx][2], gtPose[Idx][3], gtPose[Idx][4], gtPose[Idx][5]);
+    //         for ( int i = 0; i < KeyPointInMap_.size(); i++){
+    //             // std::cout << KeyPointInMap_[i] << " ";
+    //             ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(KeyPointInMap_[i], CamPose, fx, cv::Point2d(cx, cy));
+    //             int id = OriginalDB->KFtoMPIdx[j][i];
+    //             double* X = (double*)(&(OriginalDB->Landmarks[id]));
+    //             global_BA.AddResidualBlock(map_only_cost_func, NULL, X); 
+    //             std::cout << OriginalDB->Landmarks[id] << " ";             
+    //         } 
+    //         std::cout << std::endl;
+    //     }
+    //     ceres::Solver::Options options;
+    //     options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+    //     options.num_threads = 8;
+    //     options.minimizer_progress_to_stdout = false;
+    //     ceres::Solver::Summary summary;
+    //     std::cout << " Start optimize map point " << std::endl;
+    //     ceres::Solve(options, &global_BA, &summary);
+    //     std::cout << summary.BriefReport() << std::endl;                
+    //     std::cout << " End optimize map point " << std::endl;
+    // }
 
     void System::SaveOriginalDataBase(std::string filepath)
     {

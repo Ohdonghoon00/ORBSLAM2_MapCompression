@@ -78,6 +78,7 @@
         "queue": "cpp",
         "stack": "cpp",
         "core": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "dense": "cpp"
     }
 }

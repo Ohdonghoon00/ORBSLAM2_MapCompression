@@ -3,17 +3,108 @@
 using namespace cv;
 cv::Mat K = GetK(IntrinsicData);
 
-cv::Mat InputQueryImg(std::string QueryFile)
+int VPStest::LoadDBfile(std::string dbFilePath, DataBase *DB)
+{
+    std::ifstream in(dbFilePath, std::ios_base::binary);
+    if (!in){
+        std::cout << "Cannot DataBase bin file is empty!" << std::endl;
+        return EXIT_FAILURE;
+    }
+    boost::archive::binary_iarchive ia(in, boost::archive::no_header);
+    ia >> DB;
+    in.close();    
+}
+
+void VPStest::InputDBdescriptorTovoc(DataBase *DB, OrbDatabase *db)
+{
+    for(size_t i = 0; i < DB->KFtoMPIdx.size(); i++){
+
+        // std::cout << " KF num : " << i << "     Keypoint num : " << (DB->GetKFMatDescriptor(i)).size() << std::endl;  
+        
+        // Input Voc
+        cv::Mat DB_image = DB->LeftKFimg[i];
+        cv::Mat mask_, DBDescriptor_;
+        std::vector<cv::KeyPoint> DBKeypoints_;
+        // cv::Ptr<cv::ORB> orb = cv::ORB::create(nFeatures);
+        // orb->detectAndCompute(DB_image, mask_, DBKeypoints_, DBDescriptor_);
+        ORBfeatureAndDescriptor(DB_image, mask_, DBKeypoints_, DBDescriptor_);        
+        std::vector<cv::Mat> DBDescriptors = MatToVectorMat(DBDescriptor_);
+        db->add(DBDescriptors);
+    }    
+}
+
+int VPStest::Loadgt(std::string queryGtTrajectoryPath)
+{
+    std::ifstream queryGtTrajectoryFile(queryGtTrajectoryPath, std::ifstream::in);
+
+    if(!queryGtTrajectoryFile.is_open()){
+        std::cout << " GT Query Trajectory file failed to open " << std::endl;
+        return EXIT_FAILURE;
+    }      
+
+    std::string line;
+    while(std::getline(queryGtTrajectoryFile, line)){
+        
+        std::string value;
+        std::vector<std::string> values;
+
+        std::stringstream ss(line);
+        while(std::getline(ss, value, ' '))
+            values.push_back(value);
+
+        Vector6d pose;
+        pose << std::stod(values[1]), std::stod(values[2]), std::stod(values[3]),
+                std::stod(values[4]), std::stod(values[5]), std::stod(values[6]);
+
+        gtPoses.push_back(pose);        
+    }
+}
+
+void VPStest::InputQuerydb(QueryDB *query, std::string timeStampfilePath, std::string queryImgdirPath)
+{
+    std::ifstream s;
+    s.open(timeStampfilePath);
+    std::string line;
+        
+    // Load Query Img
+    // std::cout << " Input Query Img " << std::endl;
+
+    while(std::getline(s, line)){
+        
+        std::stringstream ss;
+        ss << line;
+        std::string QueryImgsPath = queryImgdirPath + "/" + ss.str() +".png";
+        cv::Mat img = cv::imread(QueryImgsPath);
+        query->qImgs.push_back(img);
+        query->qTimestamps.push_back(std::stod(line) * 10e-10);
+    }
+    
+    s.close();     
+}
+
+
+cv::Mat VPStest::InputQueryImg(std::string QueryFile)
 { 
     cv::Mat image;
     cv::VideoCapture video;
     if(!video.open(QueryFile)){
         std::cout << " No query image " << std::endl;
-        cv::waitKey();
+        break;
     }
     video >> image;
 
     return image;
+}
+
+cv::Mat VPStest::InputQueryImg(const QueryDB query, int imageNum)
+{
+    cv::Mat qImg = query.qImgs[imageNum];
+    if(qImg.empty()) {
+        std::cout << " Error at input query img " << std::endl; 
+        break;
+    }
+    if (qImg.channels() > 1) cv::cvtColor(qImg, qImg, cv::COLOR_RGB2GRAY);
+    return qImg;
 }
 
 std::vector<cv::KeyPoint> VPStest::ORBFeatureExtract(cv::Mat img)

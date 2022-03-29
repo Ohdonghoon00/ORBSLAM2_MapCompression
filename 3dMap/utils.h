@@ -9,11 +9,12 @@
 #include "opencv2/opencv.hpp"
 
 #include "Converter.h"
+#include "Parameter.h"
 
 
 
-typedef Eigen::Matrix<float, 6, 1> Vector6f;
-typedef Eigen::Matrix<double, 6, 1> Vector6d;
+// typedef Eigen::Matrix<float, 6, 1> Vector6f;
+// typedef Eigen::Matrix<double, 6, 1> Vector6d;
 
 
 extern Eigen::Vector3d Origin;
