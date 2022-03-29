@@ -35,12 +35,12 @@ int main(int argc, char **argv)
     initialize_window();
     
     
-    int nFeatures = 3000;
+    int nFeatures = 4000;
     float scaleFactor = 1.2;
     int nlevels = 8;
     int iniThFAST = 20;
     int minThFAST = 7;
-    VPStest VPStest(4000);
+    VPStest VPStest;
     ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
     
     VPStestResult* SaveVPStestResult;
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
     DataBase* DB;
     double duration(0.0), duration_(0.0);
     int image_num = 0;
-
+    int failNum = 0;
 
     // Load Map
     std::ifstream in(argv[1], std::ios_base::binary);
@@ -62,19 +62,22 @@ int main(int argc, char **argv)
 
 
     // for(int i = 0; DB->LeftKFimg.size(); i++){
+    //     if(i < 125) continue;
     //     cv::imshow("KFimg", DB->LeftKFimg[i]);
-    //     std::cout << setprecision(19) << DB->timestamps[i] << std::endl;
+    //     std::cout << i << " " << setprecision(19) << DB->timestamps[i] << std::endl;
     //     cv::waitKey();
     // }
     
     // Load voc
     std::cout << "load voc" << std::endl;
     
+    // ORBVocabulary voc(argv[2]);
     ORBVocabulary voc;
     voc.loadFromTextFile(argv[2]);
     std::cout << "copy voc to db" << std::endl;
     OrbDatabase db(voc, false, 0); // false = do not use direct index
     std::cout << "KF num : " << DB->KFtoMPIdx.size() << std::endl;
+    std::cout << "landMarks num : " << DB->Landmarks.size() << std::endl;
     
     // Input DB descriptor to voc
     for(size_t i = 0; i < DB->KFtoMPIdx.size(); i++){
@@ -85,6 +88,8 @@ int main(int argc, char **argv)
         cv::Mat DB_image = DB->LeftKFimg[i];
         cv::Mat mask_, DBDescriptor_;
         std::vector<cv::KeyPoint> DBKeypoints_;
+        // cv::Ptr<cv::ORB> orb = cv::ORB::create(nFeatures);
+        // orb->detectAndCompute(DB_image, mask_, DBKeypoints_, DBDescriptor_);
         ORBfeatureAndDescriptor(DB_image, mask_, DBKeypoints_, DBDescriptor_);        
         std::vector<cv::Mat> DBDescriptors = MatToVectorMat(DBDescriptor_);
         db.add(DBDescriptors);
@@ -145,15 +150,15 @@ int main(int argc, char **argv)
 
     // Save PnPinlier result
     ofstream TimeStampFile;
-    TimeStampFile.open("MH01_MH02_VPStest_original_TimeStamp.txt");
+    TimeStampFile.open("MH01_MH02_VPStest_original_TimeStamp(full_ba).txt");
 
     // Save trajectory result
     ofstream EstimateTraj;
-    EstimateTraj.open("MH01_MH02_VPStest_original_Pose.txt");
+    EstimateTraj.open("MH01_MH02_VPStest_original_Pose(full_ba).txt");
 
     // PnP and DBoW2 Result
     ofstream ResultFile;
-    ResultFile.open("MH01_MH02_original_Result.txt");
+    ResultFile.open("MH01_MH02_original_Result(full_ba).txt");
 
     std::string filepath = "MH01_MH02_VPStest_original_result.bin";
 
@@ -172,6 +177,11 @@ int main(int argc, char **argv)
         if (QueryImg.channels() > 1) cv::cvtColor(QueryImg, QueryImg, cv::COLOR_RGB2GRAY);
         std::cout << " Image Num is  :  " << image_num << "      !!!!!!!!!!!!!!!!!!!!" << std::endl;
 
+        if(image_num < 338){
+            image_num++;
+            continue;
+        }
+
         cv::Mat mask, QDescriptors;
         std::vector<cv::KeyPoint> QKeypoints;
         ORBfeatureAndDescriptor(QueryImg, mask, QKeypoints, QDescriptors);
@@ -181,7 +191,7 @@ int main(int argc, char **argv)
         ret.clear();
     
         std::vector<cv::Mat> VQDescriptors = MatToVectorMat(QDescriptors);
-        db.query(VQDescriptors, ret, 10);
+        db.query(VQDescriptors, ret, 20);
         std::cout << ret << std::endl;
         std::cout << "High score keyframe  num : "  << ret[0].Id << std::endl;
         // "       word num : " << ret[0].nWords << std::endl;
@@ -192,10 +202,14 @@ int main(int argc, char **argv)
         std::cout << "Find Reference Keyframe !! " << std::endl;
         VPStest.SetCandidateKFid(ret);
 
-        int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints);
+        int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints, QueryImg);
         std::cout << " Selected Keyframe num : " << ReferenceKFId << std::endl;
         if(ReferenceKFId == -1){
             image_num++;
+            failNum++;
+            // cv::imshow("query", QueryImg);
+            // cv::imshow("db top1", DB->LeftKFimg[DBow2HighScoreKFId]);
+            // cv::waitKey();
             continue;
         }    
 
@@ -255,15 +269,21 @@ int main(int argc, char **argv)
             
         // For Draw Inliers Match
         std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(ReferenceKFId);
+        cv::Mat allMatchImg;
+        std::cout << " Total Match size : " << Matches.size() << std::endl;
+        std::vector<cv::DMatch> goodMatches(Matches.begin(), Matches.begin() + 100);
+        cv::drawMatches(QueryImg, QKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, allMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+        cv::imshow("allMatchImg", allMatchImg);        
+        
         VPStest.InlierMatchResult(Matches, Inliers);
-        cv::Mat MatchImg;
-        std::cout << " Match size : " << Matches.size() << std::endl;
+        cv::Mat InlierMatchImg;
+        std::cout << " Inlier Match size : " << Matches.size() << std::endl;
 
-        cv::drawMatches(QueryImg, QKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, MatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-        cv::imshow("MatchImg", MatchImg);
-
+        cv::drawMatches(QueryImg, QKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, InlierMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+        cv::imshow("inlierMatchImg", InlierMatchImg);
+        // cv::imshow("Img", QueryImg);
         // VPS Result Pose
-        show_trajectory_keyframe(Pose, 0.0, 0.0, 1.0, 0.5, 3.5);
+        show_trajectory_keyframe(Pose, 0.0, 0.0, 1.0, 0.1, 0.2);
         glFlush();
         
         // Save Result
@@ -274,7 +294,10 @@ int main(int argc, char **argv)
         // SaveVPStestResult->DBoW2ResultImgNum[image_num] = ReferenceKFId;
 
 
-
+        // int key = cv::waitKey(1);
+        // if(key == 32){
+        //     key = cv::waitKey();
+        // }
         cv::waitKey();
         
         image_num++;
@@ -299,6 +322,7 @@ int main(int argc, char **argv)
     std::cout << "Total Landmark Num : " << DB->Landmarks.size() << std::endl;
     // file << " Total VPS time is  : " << duration << " sec" << std::endl;
     std::cout << " Total VPS time is  : " << duration << " sec" << std::endl;
+    std::cout << "Total image Num is : " << image_num << " " << " fail image num is : " << failNum << std::endl;
     
     TimeStampFile.close();
     EstimateTraj.close();

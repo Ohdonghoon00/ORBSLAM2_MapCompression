@@ -184,11 +184,11 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Load Euroc GT pose
-    std::string EurocGTPath = "/home/ohdonghoon/ORBSLAM2_MapCompression/ORB_SLAM2/Examples/Stereo/MH01_Cam0Pose.txt";
-    std::vector<Vector6d> EurocgtPoses;
-    std::vector<double> timeStamps;
-    SLAM.ReadgtPose(EurocGTPath, &EurocgtPoses, &timeStamps);
-    std::cout << "EurocgtPoses size : " << EurocgtPoses.size() << std::endl;
+    // std::string EurocGTPath = "/home/ohdonghoon/ORBSLAM2_MapCompression/ORB_SLAM2/Examples/Stereo/MH01_Cam0Pose.txt";
+    // std::vector<Vector6d> EurocgtPoses;
+    // std::vector<double> timeStamps;
+    // SLAM.ReadgtPose(EurocGTPath, &EurocgtPoses, &timeStamps);
+    // std::cout << "EurocgtPoses size : " << EurocgtPoses.size() << std::endl;
 
     //Save camera trajectory
     SLAM.SaveTrajectoryTUM("EurocMH01_Trajectory.txt");
@@ -197,7 +197,7 @@ int main(int argc, char **argv)
     SLAM.SaveKeyFrameTrajectoryTUM("EurocMH01_Keyframe_Trajectory.txt");
 
     // Save in Original Database.h
-    SLAM.SaveOriginalDataBase("EurocMH01_DB_original.bin", EurocgtPoses, timeStamps);
+    SLAM.SaveOriginalDataBase("EurocMH01_DB_original.bin");
     
     // // Map Compression
     // SLAM.MapCompression2(0.7, "EurocMH01_DB_70%.bin");
@@ -223,8 +223,8 @@ int main(int argc, char **argv)
     // // Save in Compressed Database.h
     // // SLAM.SaveDataBase("EurocMH01_DB_20%.bin"); // 0.343 * 0.6 = 0.2018
 
-    // // Save Timestamp + Trajectory result to # time tx ty tz qx qy qz qw
-    // SLAM.SavePose("EurocMH01_DB_Trajectory_result.txt");
+    // Save Timestamp + Trajectory result to # time tx ty tz qx qy qz qw
+    SLAM.SavePose("EurocMH01_DB_Trajectory_result.txt");
 
     return 0;
 }

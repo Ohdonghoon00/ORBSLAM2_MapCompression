@@ -186,8 +186,8 @@ struct map_point_only_ReprojectionError
 
 
         // residual = x - x'
-        residuals[0] = T(x.x) - x_p;
-        residuals[1] = T(x.y) - y_p;
+        residuals[0] = x_p - T(x.x);
+        residuals[1] = y_p - T(x.y);
 
 // std::cout << T(x.x) << " " << T(x.y) << "!!" <<  x_p << " " << y_p << std::endl;
 

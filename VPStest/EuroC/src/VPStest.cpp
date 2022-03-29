@@ -1,5 +1,6 @@
 #include "VPStest.h"
 
+using namespace cv;
 cv::Mat K = GetK(IntrinsicData);
 
 cv::Mat InputQueryImg(std::string QueryFile)
@@ -45,7 +46,7 @@ std::vector<cv::DMatch> VPStest::ORBDescriptorMatch(cv::Mat queryDescriptor, cv:
 void VPStest::SetCandidateKFid(DBoW2::QueryResults ret)
 {
     CandidateKFid.clear();
-    for(int i = 0; i < 10; i++){
+    for(int i = 0; i < 20; i++){
         CandidateKFid.push_back(ret[i].Id);
     }
 }
@@ -98,15 +99,15 @@ std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<
     return ReprojectErr;
 }
 
-int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints)
+int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, cv::Mat Qimg)
 {
     std::map<int, std::vector<cv::DMatch>> MatchResults;
     std::vector<double> PnPinlierRatios;
     std::vector<int> inlier_nums;
-    
+    std::vector<cv::Mat> inliersVec;
+    MatchResults.clear();
     MatchDB3dPoints.clear();
     MatchQ2dPoints.clear();
-    
     for(int i = 0; i < CandidateKFid.size(); i ++){
         
         int KFid = CandidateKFid[i];
@@ -135,6 +136,7 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
         // double _PnPinlierRatio = PnPInlierRatio(KFid);
         PnPinlierRatios.push_back(_PnPInlierRatio);
         inlier_nums.push_back(inliers.rows);
+        inliersVec.push_back(inliers);
 
 
 
@@ -155,10 +157,22 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
     std::cout << MaxInlierIdx << std::endl;
 
 
-    if( MaxInlier > 40)
+    if( MaxInlier > 30)
         return CandidateKFid[MaxInlierIdx];
-    else
+    else{
+        // std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(CandidateKFid[MaxInlierIdx]);
+        // cv::Mat matchimg;
+        // std::vector<cv::DMatch> Goodmatches_(MatchResults[CandidateKFid[MaxInlierIdx]].begin(), MatchResults[CandidateKFid[MaxInlierIdx]].begin() + 30); 
+        // cv::drawMatches(Qimg, QKeypoints, DB->LeftKFimg[CandidateKFid[MaxInlierIdx]], DB2dMatchForDraw, Goodmatches_, matchimg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
+        // cv::imshow("matchtop_", matchimg);
+        
+        // std::vector<cv::DMatch> Inliermatches = MatchResults[CandidateKFid[MaxInlierIdx]];
+        // InlierMatchResult(Inliermatches, inliersVec[MaxInlierIdx]);
+        // cv::Mat InlierMatchImg;
+        // cv::drawMatches(Qimg, QKeypoints, DB->LeftKFimg[CandidateKFid[MaxInlierIdx]], DB2dMatchForDraw, Inliermatches, InlierMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
+        // cv::imshow("inlierMatch", InlierMatchImg);
         return -1;
+    }
     // // Place Recognition debug
     // cv::Mat BestRatioImage = DB->LeftKFimg[CandidateKFid[MaxRatioIdx]];
     // cv::imshow("BestRatioImage", BestRatioImage);
@@ -175,7 +189,7 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
     std::vector<cv::KeyPoint> DB2dpts;
     
     int NearSearchNum = 0;
-    float Disthres = 100.0;
+    float Disthres = 40.0;
 
     cv::Mat Descriptor = DB->GetKFMatDescriptor(KFid);
     // cv::Mat Descriptor = DB->GetNearReferenceKFMatDescriptor(KFid, NearSearchNum);
@@ -233,10 +247,10 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
                 0, 0, 0, 1;
         Pose = Pose.inverse();
     
-        // ReprojectionErr = ReprojectionError(Match3dpts, Match2dpts, Pose);
+        // std::vector<float> ReprojectionErrViz = ReprojectionError(Match3dpts, Match2dpts, Pose);
         // for(int i = 0; i < Inliers.rows; i++){
         //     int index = Inliers.at<int>(i, 0);
-        //     std::cout << ReprojectionErr[index] << " ";
+        //     std::cout << ReprojectionErrViz[index] << " ";
         // }
     
     return PnPInlierRatio;

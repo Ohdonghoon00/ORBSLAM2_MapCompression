@@ -28,7 +28,15 @@
 #include "Frame.h"
 
 #include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
-
+#include <string>
+#include <iostream>
+#include<algorithm>
+#include<fstream>
+// dh
+// typedef Eigen::Matrix<double, 6, 1> Vector6d;
+// extern std::vector<double> gtTimeStamps;
+// extern std::vector<Vector6d> gtPose;
+// extern std::string gtPath;
 namespace ORB_SLAM2
 {
 
@@ -59,4 +67,9 @@ public:
 
 } //namespace ORB_SLAM
 
+// dh
+// int ReadgtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps);
+// int FindTimestampIdx(const double a, const std::vector<double> b);
+// cv::Mat To44RTproj(Vector6d pose);
+// Eigen::Matrix3d ToMat33(Eigen::Vector3d rod);
 #endif // OPTIMIZER_H

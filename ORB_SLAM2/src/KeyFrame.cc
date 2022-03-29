@@ -23,6 +23,11 @@
 #include "ORBmatcher.h"
 #include<mutex>
 
+// dh
+std::string gtPath = "/home/ohdonghoon/EuroC/MH01/MH01db_MH01cam0Pose.txt";
+std::vector<double> gtTimeStamps;
+std::vector<Vector6d> gtPose;
+int a = ReadgtPose(gtPath, &gtPose, &gtTimeStamps);
 namespace ORB_SLAM2
 {
 
@@ -55,8 +60,16 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
         for(int j=0; j<mnGridRows; j++)
             mGrid[i][j] = F.mGrid[i][j];
     }
+    
+    // dh
+    int tIdx = FindTimestampIdx(F.mTimeStamp, gtTimeStamps);
+    cv::Mat proj = To44RTproj(gtPose[tIdx]);
+    // std::cout << setprecision(19) << F.mTimeStamp << " " << gtTimeStamps[tIdx] << " " << setprecision(7) << gtPose[tIdx].transpose() << std::endl;
+    // std::cout << proj << std::endl;
+    SetPose(proj);
 
-    SetPose(F.mTcw);    
+    
+    // SetPose(F.mTcw);    
 }
 
 void KeyFrame::ComputeBoW()
@@ -666,3 +679,67 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
 }
 
 } //namespace ORB_SLAM
+
+    // dh
+    int ReadgtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps)
+    {
+        std::ifstream gtFile(gtpath, std::ifstream::in);
+        if(!gtFile.is_open()){
+            std::cout << " gtpose file failed to open " << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        std::string line;
+        while(std::getline(gtFile, line)){
+            std::string value;
+            std::vector<std::string> values;
+
+            std::stringstream ss(line);
+            while(std::getline(ss, value, ' '))
+                values.push_back(value);
+            
+            Vector6d pose;
+            pose << std::stod(values[1]), std::stod(values[2]), std::stod(values[3]), std::stod(values[4]), std::stod(values[5]), std::stod(values[6]);
+            poses->push_back(pose);
+            timeStamps->push_back(std::stod(values[0])/1e9);
+        }
+    }
+
+    int FindTimestampIdx(const double a, const std::vector<double> b)
+    {
+        double MinVal = DBL_MAX;
+        int MinIdx = -1;
+
+        for(int i = 0; i < b.size(); i++){
+            double diff = std::fabs(b[i] - a);
+            if(diff < MinVal){
+                MinVal = diff;
+                MinIdx = i;
+            }
+        }
+        return MinIdx;
+    }
+
+    Eigen::Matrix3d ToMat33(Eigen::Vector3d rod)
+    {
+        Eigen::AngleAxisd r(rod.norm(), rod.normalized());
+        Eigen::Matrix3d rot = r.toRotationMatrix();
+
+        return rot;
+    }
+
+    cv::Mat To44RTproj(Vector6d pose)
+    {
+        Eigen::Vector3d rod;
+        rod << pose[0], pose[1], pose[2];
+        Eigen::Matrix3d rot = ToMat33(rod);
+        float motion[] = {  (float)rot(0, 0), (float)rot(0, 1), (float)rot(0, 2), (float)pose[3],
+                            (float)rot(1, 0), (float)rot(1, 1), (float)rot(1, 2), (float)pose[4],
+                            (float)rot(2, 0), (float)rot(2, 1), (float)rot(2, 2), (float)pose[5],
+                            (float)0.0, (float)0.0, (float)0.0, (float)1.0};
+        cv::Mat RT(4, 4, CV_32F, motion);
+        RT = RT.inv();
+
+
+        return RT.clone();
+    }

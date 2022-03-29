@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     int nlevels = 8;
     int iniThFAST = 20;
     int minThFAST = 7;
-    VPStest VPStest(4000);
+    VPStest VPStest;
     ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
     
     // VPStestResult* SaveVPStestResult;

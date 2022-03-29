@@ -36,21 +36,30 @@ int main(int argc, char** argv)
     std::string EurocGTPath = argv[2];
     std::vector<Vector6d> EurocgtPoses;
     std::vector<double> timeStamps;
+    
     ReadgtPose(EurocGTPath, &EurocgtPoses, &timeStamps);
     // ReadKFPose(EurocGTPath, &EurocgtPoses, &timeStamps);
     std::cout << "EurocgtPoses size : " << EurocgtPoses.size() << std::endl;
-    // int idx = 300;
     
-    int imgIdx = 100;
-    int poseidx = FindTimestampIdx(DB->timestamps[imgIdx], timeStamps);
-    std::vector<cv::Point3d> Landmarks = DB->GetKF3dPoint(imgIdx);
-    std::vector<cv::Point3f> Landmarksf;
-    for(auto i : Landmarks)
-        Landmarksf.push_back(cv::Point3f((float)i.x, (float)i.y, (float)i.z));
-    std::vector<cv::KeyPoint> imgPoints_ = DB->GetKF2dPoint(imgIdx);
-    std::vector<cv::Point2f> imgPoints = KeyPoint2Point2f(imgPoints_);
-    std::vector<float> ReprojErr = ReprojectionError(Landmarksf, imgPoints, To44RT(EurocgtPoses[poseidx]));
+    // int idx = 300;
+    int outlierNum = 0;
+    for(size_t i = 0; i < DB->KFtoMPIdx.size(); i++){
 
+        size_t imgIdx = i;
+        
+        int poseidx = FindTimestampIdx(DB->timestamps[imgIdx], timeStamps);
+        std::vector<cv::Point3d> Landmarks = DB->GetKF3dPoint(imgIdx);
+        std::vector<cv::Point3f> Landmarksf;
+        for(auto i : Landmarks)
+            Landmarksf.push_back(cv::Point3f((float)i.x, (float)i.y, (float)i.z));
+        std::vector<cv::KeyPoint> imgPoints_ = DB->GetKF2dPoint(imgIdx);
+        std::vector<cv::Point2f> imgPoints = KeyPoint2Point2f(imgPoints_);
+        std::vector<float> ReprojErr = ReprojectionError(Landmarksf, imgPoints, To44RT(EurocgtPoses[poseidx]));
+        for(int j = 0; j < ReprojErr.size(); j++){
+            if(ReprojErr[j] > 5.0) outlierNum++;
+        }
+    }
+    std::cout << " outlier Num : " << outlierNum << std::endl;
     // Viewer
     glutInit(&argc, argv);
     initialize_window();
@@ -81,7 +90,7 @@ int main(int argc, char** argv)
                 ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(imgPoints[i], camProj, fx, cv::Point2d(cx, cy));
                 int id = DB->KFtoMPIdx[j][i];
                 double* X = (double*)(&(DB->Landmarks[id]));
-                global_BA.AddResidualBlock(map_only_cost_func, new CauchyLoss(0.002), X); 
+                global_BA.AddResidualBlock(map_only_cost_func, NULL, X); 
             } 
         }
         ceres::Solver::Options options;
@@ -112,16 +121,16 @@ int main(int argc, char** argv)
         }
         glFlush();
         
-        // std::string saveDbPath = "EurocMH01_DB_original_.bin";
-        // std::ofstream out(saveDbPath, std::ios_base::binary);
-        // if (!out)
-        // {
-        //     std::cout << "Cannot Write to Database File: " << std::endl;
-        //     exit(-1);
-        // }
-        // boost::archive::binary_oarchive oa(out, boost::archive::no_header);
-        // oa << DB;
-        // out.close();
+        std::string saveDbPath = "EurocMH01_DB_original_fullba.bin";
+        std::ofstream out(saveDbPath, std::ios_base::binary);
+        if (!out)
+        {
+            std::cout << "Cannot Write to Database File: " << std::endl;
+            exit(-1);
+        }
+        boost::archive::binary_oarchive oa(out, boost::archive::no_header);
+        oa << DB;
+        out.close();
 
 
 

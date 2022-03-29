@@ -308,9 +308,7 @@ std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<
     PoseRT = Pose_.block<3, 4>(0, 0);
     Eigen::MatrixXf K_ = Mat2Eigen(K);
     ReprojectPoints = PoseRT * WorldPoints;
-    // for(int i = 0; i < ReprojectPoints.cols(); i++){
-    //     std::cout << ReprojectPoints(0, i) << " " << ReprojectPoints(1, i) << " " << ReprojectPoints(2, i) << std::endl;
-    // }
+
     for(int i = 0; i < ReprojectPoints.cols(); i++){
         ReprojectPoints(0, i) /= ReprojectPoints(2, i);
         ReprojectPoints(1, i) /= ReprojectPoints(2, i);
@@ -318,6 +316,12 @@ std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<
     }
     ReprojectPoints = K_ * ReprojectPoints;
 
+    // for(int i = 0; i < ReprojectPoints.cols(); i++){
+    //     std::cout << ReprojectPoints(0, i) << " " << ReprojectPoints(1, i) << " " << ReprojectPoints(2, i) << std::endl;
+    // }
+    // for(int i = 0; i < ImagePoints.cols(); i++){
+    //     std::cout << ImagePoints(0, i) << " " << ImagePoints(1, i) << " " << ImagePoints(2, i) << std::endl;
+    // }
     std::vector<float> ReprojectErr(WorldPoints.cols());
     for(int i = 0; i < WorldPoints.cols(); i++){
         ReprojectErr[i] = std::sqrt( (ImagePoints(0, i) - ReprojectPoints(0, i)) * 

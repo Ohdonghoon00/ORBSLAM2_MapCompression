@@ -691,7 +691,7 @@ namespace ORB_SLAM2
         std::cout << " End optimize map point " << std::endl;
     }
 
-    void System::SaveOriginalDataBase(std::string filepath, const std::vector<Vector6d> gtPose, const std::vector<double> timeStamps)
+    void System::SaveOriginalDataBase(std::string filepath)
     {
 
         // DataBase.h
@@ -699,6 +699,7 @@ namespace ORB_SLAM2
         std::vector<ORB_SLAM2::KeyFrame *> AllKFptr = mpMap->GetAllKeyFrames();
         std::vector<ORB_SLAM2::MapPoint *> AllMpptr = mpMap->GetAllMapPoints();
         std::sort(AllKFptr.begin(), AllKFptr.end(), ORB_SLAM2::KeyFrame::lId);
+        std::map<int, long unsigned int> mapPointIds;
 
         int MaxMapId = 0;
         for (size_t i = 0; i < AllKFptr.size(); i++)
@@ -706,7 +707,6 @@ namespace ORB_SLAM2
             OriginalDB->timestamps.push_back(AllKFptr[i]->mTimeStamp);
             OriginalDB->LeftKFimg.push_back(AllKFptr[i]->LeftImg);
             OriginalDB->RightKFimg.push_back(AllKFptr[i]->RightImg);
-            
             // std::cout <<  DB->KeyPointInMap[i].size() << "  " << DB->KFtoMPIdx[i].size() << std::endl;
             std::set<MapPoint*> KFMapPoints = AllKFptr[i]->GetMapPoints();
             // std::cout << "KF num : " << i << " map points num : " << KFMapPoints.size() << std::endl;
@@ -727,10 +727,17 @@ namespace ORB_SLAM2
                 bool InKF = false;
                 int Mpid = 0;
                 for(size_t k = 0; k < OriginalDB->Landmarks.size(); k++){
-                    if(mp == OriginalDB->Landmarks[k]){
+                    // if(mp == OriginalDB->Landmarks[k]){
+                    //     InKF = true;
+                    //     Mpid = k;
+                    //     std::cout << "SameLandMark!!" <<std::endl;
+                    // }
+                    long unsigned int MaptsId = j->mnId;
+                    if(MaptsId == mapPointIds[k]){
                         InKF = true;
                         Mpid = k;
-                        std::cout << "SameLandMark!!" <<std::endl;
+                        // std::cout << "SameLandMark!!!!!!!!" <<std::endl;                        
+                        break;
                     }
                 }
                      
@@ -740,9 +747,11 @@ namespace ORB_SLAM2
                     OriginalDB->KFtoMPIdx[i].push_back(Mpid);
                 }
                 else{
+                    // std::cout << "new landmark" << std::endl;
                     OriginalDB->Landmarks[MaxMapId] = mp;
                     OriginalDB->Descriptors[MaxMapId] = j->GetDescriptor();
                     OriginalDB->KFtoMPIdx[i].push_back(MaxMapId);
+                    mapPointIds[MaxMapId] = j->mnId;
                     MaxMapId++;
                 }
             }
@@ -785,30 +794,30 @@ namespace ORB_SLAM2
         out.close();
     }
     
-    int System::ReadgtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps)
-    {
-        std::ifstream gtFile(gtpath, std::ifstream::in);
-        if(!gtFile.is_open()){
-            std::cout << " gtpose file failed to open " << std::endl;
-            return EXIT_FAILURE;
-        }
+    // int System::ReadgtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps)
+    // {
+    //     std::ifstream gtFile(gtpath, std::ifstream::in);
+    //     if(!gtFile.is_open()){
+    //         std::cout << " gtpose file failed to open " << std::endl;
+    //         return EXIT_FAILURE;
+    //     }
 
-        std::string line;
-        while(std::getline(gtFile, line)){
-            std::string value;
-            std::vector<std::string> values;
+    //     std::string line;
+    //     while(std::getline(gtFile, line)){
+    //         std::string value;
+    //         std::vector<std::string> values;
 
-            std::stringstream ss(line);
-            while(std::getline(ss, value, ' '))
-                values.push_back(value);
+    //         std::stringstream ss(line);
+    //         while(std::getline(ss, value, ' '))
+    //             values.push_back(value);
             
-            Vector6d pose;
-            pose << std::stod(values[1]), std::stod(values[2]), std::stod(values[3]), std::stod(values[4]), std::stod(values[5]), std::stod(values[6]);
-            poses->push_back(pose);
-            timeStamps->push_back(std::stod(values[0])/1e9);
-        }       
+    //         Vector6d pose;
+    //         pose << std::stod(values[1]), std::stod(values[2]), std::stod(values[3]), std::stod(values[4]), std::stod(values[5]), std::stod(values[6]);
+    //         poses->push_back(pose);
+    //         timeStamps->push_back(std::stod(values[0])/1e9);
+    //     }       
 
-    }       
+    // }       
                
         
 

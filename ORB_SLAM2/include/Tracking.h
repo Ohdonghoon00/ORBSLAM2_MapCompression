@@ -39,7 +39,11 @@
 #include "System.h"
 
 #include <mutex>
-
+// dh
+// typedef Eigen::Matrix<double, 6, 1> Vector6d;
+// extern std::vector<double> gtTimeStamps;
+// extern std::vector<Vector6d> gtPose;
+// extern std::string gtPath;
 namespace ORB_SLAM2
 {
 
@@ -217,5 +221,11 @@ protected:
 };
 
 } //namespace ORB_SLAM
+
+// dh
+// int ReadgtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps);
+// int FindTimestampIdx(const double a, const std::vector<double> b);
+// cv::Mat To44RTproj(Vector6d pose);
+// Eigen::Matrix3d ToMat33(Eigen::Vector3d rod);
 
 #endif // TRACKING_H

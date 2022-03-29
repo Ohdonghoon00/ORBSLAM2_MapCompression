@@ -23,8 +23,7 @@ class VPStest
 {
 public:
     
-    VPStest(int num):
-        FeatureNum(num)
+    VPStest()
     {}
 
     int FeatureNum;
@@ -36,7 +35,7 @@ public:
 
     void SetCandidateKFid(DBoW2::QueryResults ret);
 
-    int FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints);
+    int FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, cv::Mat Qimg);
     double PnPInlierRatio(int KFid);
     double VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, int KFid, Eigen::Matrix4d &Pose, cv::Mat &Inliers, std::vector<cv::DMatch> &GoodMatches_);
 

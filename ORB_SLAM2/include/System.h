@@ -132,11 +132,11 @@ public:
 
     void MapCompression(double CompressionRatio);
     void MapCompression2(double CompressionRatio, std::string filepath);
-    void SaveOriginalDataBase(std::string filepath, const std::vector<Vector6d> gtPose, const std::vector<double> timeStamps);
+    void SaveOriginalDataBase(std::string filepath);
     void SaveCompressedDataBase(std::vector<GRBVar> x, std::string filepath);
     void SavePose(std::string filepath);
     void printMap(std::map<ORB_SLAM2::KeyFrame*,size_t> target_map);
-    int ReadgtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps);
+    // int ReadgtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps);
     void FullBA(const std::vector<Vector6d> gtPose, const std::vector<double> timeStamps);
     int FindTimestampIdx(const double a, const std::vector<double> b);
 
