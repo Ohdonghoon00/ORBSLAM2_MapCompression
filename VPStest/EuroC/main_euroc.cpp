@@ -34,7 +34,12 @@ int main(int argc, char **argv)
     glutInit(&argc, argv);
     initialize_window();
     
-    
+    int nFeatures = 4000;
+    float scaleFactor = 1.2;
+    int nlevels = 8;
+    int iniThFAST = 20;
+    int minThFAST = 7;
+    ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
 
     VPStest VPStest;
     QueryDB query;
@@ -50,7 +55,17 @@ int main(int argc, char **argv)
     // Load Map
     std::cout << "Load DB ... " << std::endl;
     std::string dataBasefilePath = argv[1];
-    VPStest.LoadDBfile(dataBasefilePath, DB);
+    
+    // Todo
+    // VPStest.LoadDBfile(dataBasefilePath, DB);
+    std::ifstream in(dataBasefilePath, std::ios_base::binary);
+    if (!in){
+        std::cout << "Cannot DataBase bin file is empty!" << std::endl;
+        return EXIT_FAILURE;
+    }
+    boost::archive::binary_iarchive ia(in, boost::archive::no_header);
+    ia >> DB;
+    in.close();  
     std::cout << "KF num : " << DB->KFtoMPIdx.size() << std::endl;
     std::cout << "landMarks num : " << DB->Landmarks.size() << std::endl;
 
@@ -68,7 +83,8 @@ int main(int argc, char **argv)
     // Load timestamp and query imgs
     std::string timestampPath = argv[3];
     std::string queryImgdirPath = argv[4];
-    
+    VPStest.InputQuerydb(&query, timestampPath, queryImgdirPath);
+
     // Load gt trajectory for Evaluation
     std::string queryGtTrajectoryPath = argv[5];
     VPStest.Loadgt(queryGtTrajectoryPath);
@@ -95,64 +111,64 @@ int main(int argc, char **argv)
     time_t start = time(NULL);
     
     ///////// VPS TEST //////////
-    while(image_num < Queryimgs.size())
+    while(image_num < query.qImgs.size())
     {
         // glClear(GL_COLOR_BUFFER_BIT);
         query.clear();
-        cv::Mat QueryImg = VPStest.InputQueryImg(query, image_num);
+        VPStest.InputQueryImg(&query, image_num);
         std::cout << " Image Num is  :  " << image_num << "      !!!!!!!!!!!!!!!!!!!!" << std::endl;
 
         // debug
-        if(image_num < 338){
-            image_num++;
-            continue;
-        }
+        // if(image_num < 310){
+        //     image_num++;
+        //     continue;
+        // }
 
         // Extract query feature and descriptor
-        // ORBfeatureAndDescriptor(QueryImg, query.mask, query.qKeypoints, query.qDescriptors);
+        ORBfeatureAndDescriptor(query.qImg, query.qMask, query.qKeypoints, query.qDescriptor);
+        // Place Recognition
+        QueryResults ret;
+        ret.clear();
+        std::vector<cv::Mat> VQDescriptors = MatToVectorMat(query.qDescriptor);
+        db.query(VQDescriptors, ret, 20);
+        std::cout << ret << std::endl;
+        std::cout << "High score keyframe  num : "  << ret[0].Id << std::endl;
+        int DBow2HighScoreKFId = ret[0].Id;
     
-        // // Place Recognition
-        // QueryResults ret;
-        // ret.clear();
-    
-        // std::vector<cv::Mat> VQDescriptors = MatToVectorMat(QDescriptors);
-        // db.query(VQDescriptors, ret, 20);
-        // std::cout << ret << std::endl;
-        // std::cout << "High score keyframe  num : "  << ret[0].Id << std::endl;
-        // // "       word num : " << ret[0].nWords << std::endl;
-
-        // int DBow2HighScoreKFId = ret[0].Id;
-
-        // // FindReferenceKF
-        // std::cout << "Find Reference Keyframe !! " << std::endl;
-        // VPStest.SetCandidateKFid(ret);
-
-        // int ReferenceKFId = VPStest.FindReferenceKF(DB, QDescriptors, QKeypoints, QueryImg);
-        // std::cout << " Selected Keyframe num : " << ReferenceKFId << std::endl;
-        // if(ReferenceKFId == -1){
-        //     image_num++;
-        //     failNum++;
-        //     // cv::imshow("query", QueryImg);
-        //     // cv::imshow("db top1", DB->LeftKFimg[DBow2HighScoreKFId]);
-        //     // cv::waitKey();
-        //     continue;
-        // }    
 
 
-        // // VPS test to ReferenceKF
-        // Eigen::Matrix4d Pose;
-        // cv::Mat Inliers;
-        // std::vector<cv::DMatch> Matches;
-        // // std::vector<float> ReprojectionErr;
-        // double PnPInlierRatio = VPStest.VPStestToReferenceKF(DB, QDescriptors, QKeypoints, ReferenceKFId, Pose, Inliers, Matches);
-        // std::cout << " PnPInlier Ratio of Selected Keyframe : " << PnPInlierRatio << std::endl;
-        // Vector6d PnPpose = To6DOF(Pose);
+        // FindReferenceKF
+        std::cout << "Find Reference Keyframe !! " << std::endl;
+        VPStest.SetCandidateKFid(ret);
+        // int ReferenceKFId = ret[0].Id;
+        int ReferenceKFId = VPStest.FindReferenceKF(DB, query);
+        std::cout << " Selected Keyframe num : " << ReferenceKFId << std::endl;
+        if(ReferenceKFId == -1){
+            image_num++;
+            failNum++;
+            // cv::imshow("query", QueryImg);
+            // cv::imshow("db top1", DB->LeftKFimg[DBow2HighScoreKFId]);
+            // cv::waitKey();
+            continue;
+        }    
+
+
+        // VPS test to ReferenceKF
+        Eigen::Matrix4d Pose;
+        cv::Mat Inliers;
+        std::vector<cv::DMatch> Matches;
+        // std::vector<float> ReprojectionErr;
+        double PnPInlierRatio = VPStest.VPStestToReferenceKF(DB, query, ReferenceKFId, Pose, Inliers, Matches);
+        std::cout << " PnPInlier Ratio of Selected Keyframe : " << PnPInlierRatio << std::endl;
+        Vector6d PnPpose = To6DOF(Pose);
 
 
 
+        double err[2];
+        VPStest.RMSError(VPStest.gtPoses[image_num], PnPpose, &err[0]);
 
         // // RSE Error (root - square error)
-        // Eigen::Matrix4d RelativePose = To44RT(QueryGTTrajectory[image_num]).inverse() * To44RT(PnPpose);
+        // Eigen::Matrix4d RelativePose = To44RT(VPStest.gtPoses[image_num]).inverse() * To44RT(PnPpose);
         
         // // trans
         // Eigen::Vector3d RelativeTrans;
@@ -165,68 +181,76 @@ int main(int argc, char **argv)
         // double Error_Rot = std::sqrt(RelativeRot.dot(RelativeRot));
 
 
-        // TimeStampFile << setprecision(19) << timestamps[image_num] << " " << image_num << std::endl;
+        TimeStampFile << setprecision(19) << query.qTimestamps[image_num] << " " << image_num << std::endl;
 
-        // EstimateTraj << PnPpose[0] << " " << PnPpose[1] << " " << PnPpose[2] << 
-        //         " " << PnPpose[3] << " " << PnPpose[4] << " " << PnPpose[5] << std::endl;
+        EstimateTraj << PnPpose[0] << " " << PnPpose[1] << " " << PnPpose[2] << 
+                " " << PnPpose[3] << " " << PnPpose[4] << " " << PnPpose[5] << std::endl;
         
-        // ResultFile << PnPInlierRatio << " " << Inliers.rows << " " << DBow2HighScoreKFId << " " << ReferenceKFId << " " << Error_Trans << " " << Rad2Degree(Error_Rot) << std::endl;
+        ResultFile << PnPInlierRatio << " " << Inliers.rows << " " << DBow2HighScoreKFId << " " << ReferenceKFId << " " << err[0] << " " << Rad2Degree(err[1]) << std::endl;
 
-        // // Print Result
-        // std::cout << "Place Recognition Result !!!!!!!!!!!! " << std::endl;
-        // std::cout << "Query image Num : " << image_num << std::endl;
-        // std::cout << "DataBase image Num  : " <<  ReferenceKFId << std::endl;
-        // std::cout << "SolvePnPResult  !!!!!!!!!!!! " << std::endl;
-        // std::cout << "SolvePnP Estimate Pose : " << PnPpose.transpose() << std::endl;
-        // std::cout << "SolvePnP GT Pose : " << QueryGTTrajectory[image_num].transpose() << std::endl;
-        // std::cout << "TransError : " << Error_Trans << std::endl;
-        // std::cout << "RotError : " << Rad2Degree(Error_Rot) << std::endl;
-        // std::cout << " SolvePnPInlier Ratio : " << PnPInlierRatio << std::endl;
-        // std::cout << " Inliers num  : " << Inliers.rows << std::endl;
+        // Print Result
+        std::cout << "Place Recognition Result !!!!!!!!!!!! " << std::endl;
+        std::cout << "Query image Num : " << image_num << std::endl;
+        std::cout << "DataBase image Num  : " <<  ReferenceKFId << std::endl;
+        std::cout << "SolvePnPResult  !!!!!!!!!!!! " << std::endl;
+        std::cout << "SolvePnP Estimate Pose : " << PnPpose.transpose() << std::endl;
+        std::cout << "SolvePnP GT Pose : " << VPStest.gtPoses[image_num].transpose() << std::endl;
+        std::cout << "TransError : " << err[0] << std::endl;
+        std::cout << "RotError : " << Rad2Degree(err[1]) << std::endl;
+        std::cout << " SolvePnPInlier Ratio : " << PnPInlierRatio << std::endl;
+        std::cout << " Inliers num  : " << Inliers.rows << std::endl;
 
-        // // Draw Map point and keyframe pose
-        // // Map Points
-        // std::vector<cv::Point3f> LandMarks = DB->GetKF3dPoint(ReferenceKFId);
-        // for(int i = 0; i < LandMarks.size(); i++){
-        //     GLdouble X_map(LandMarks[i].x), Y_map(LandMarks[i].y), Z_map(LandMarks[i].z);
-        //     show_trajectory(X_map, Y_map, Z_map, 0.0, 0.0, 0.0, 0.01);
-        // }
+        // Draw Map point and keyframe pose
+        // Map Points
+        std::vector<cv::Point3f> LandMarks = DB->GetKF3dPoint(ReferenceKFId);
+        for(int i = 0; i < LandMarks.size(); i++){
+            GLdouble X_map(LandMarks[i].x), Y_map(LandMarks[i].y), Z_map(LandMarks[i].z);
+            show_trajectory(X_map, Y_map, Z_map, 0.0, 0.0, 0.0, 0.01);
+        }
             
-        // // For Draw Inliers Match
-        // std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(ReferenceKFId);
-        // cv::Mat allMatchImg;
-        // std::cout << " Total Match size : " << Matches.size() << std::endl;
-        // std::vector<cv::DMatch> goodMatches(Matches.begin(), Matches.begin() + 100);
-        // cv::drawMatches(QueryImg, QKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, allMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-        // cv::imshow("allMatchImg", allMatchImg);        
+        // For Draw Inliers Match
+        std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(ReferenceKFId);
+        cv::Mat allMatchImg;
+        std::cout << " Total Match size : " << Matches.size() << std::endl;
+        std::vector<cv::DMatch> goodMatches(Matches.begin(), Matches.begin() + 100);
+        cv::drawMatches(query.qImg, query.qKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, allMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+        cv::imshow("allMatchImg", allMatchImg);        
         
-        // VPStest.InlierMatchResult(Matches, Inliers);
-        // cv::Mat InlierMatchImg;
-        // std::cout << " Inlier Match size : " << Matches.size() << std::endl;
+        VPStest.InlierMatchResult(Matches, Inliers);
+        cv::Mat InlierMatchImg;
+        std::cout << " Inlier Match size : " << Matches.size() << std::endl;
 
-        // cv::drawMatches(QueryImg, QKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, InlierMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-        // cv::imshow("inlierMatchImg", InlierMatchImg);
-        // // cv::imshow("Img", QueryImg);
-        // // VPS Result Pose
-        // show_trajectory_keyframe(Pose, 0.0, 0.0, 1.0, 0.1, 0.2);
-        // glFlush();
+        cv::drawMatches(query.qImg, query.qKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, InlierMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+        cv::imshow("inlierMatchImg", InlierMatchImg);
+        // cv::imshow("Img", QueryImg);
         
-        // // Save Result
-        // // SaveVPStestResult->MatchingImg[image_num] = MatchImg;
-        // // SaveVPStestResult->PnPpose[image_num] = poseresult;
-        // // SaveVPStestResult->PnPInlierRatio[image_num] = PnPInlierRatio;
-        // // SaveVPStestResult->PnPInliers[image_num] = Inliers.rows;
-        // // SaveVPStestResult->DBoW2ResultImgNum[image_num] = ReferenceKFId;
+        // Draw InlierProjectionPoints
+        cv::Mat keyPointsImg = query.qImg.clone();
+        if (keyPointsImg.channels() < 3) cv::cvtColor(keyPointsImg, keyPointsImg, cv::COLOR_GRAY2RGB);
+        for(int i = 0; i < VPStest.qInlier2fpts.size(); i++) cv::circle(keyPointsImg, VPStest.qInlier2fpts[i], 3, cv::Scalar(0, 255, 0), 1);
+        for(int i = 0; i < VPStest.projection2fpts.size(); i++) cv::circle(keyPointsImg, VPStest.projection2fpts[i], 3, cv::Scalar(255, 0, 0), 1);
+        cv::imshow("ProjImg", keyPointsImg);
+
+        // VPS Result Pose
+        show_trajectory_keyframe(Pose, 0.0, 0.0, 1.0, 0.1, 0.2);
+        glFlush();
+        
+        // Save Result
+        // SaveVPStestResult->MatchingImg[image_num] = MatchImg;
+        // SaveVPStestResult->PnPpose[image_num] = poseresult;
+        // SaveVPStestResult->PnPInlierRatio[image_num] = PnPInlierRatio;
+        // SaveVPStestResult->PnPInliers[image_num] = Inliers.rows;
+        // SaveVPStestResult->DBoW2ResultImgNum[image_num] = ReferenceKFId;
 
 
-        // // int key = cv::waitKey(1);
-        // // if(key == 32){
-        // //     key = cv::waitKey();
-        // // }
+        // int key = cv::waitKey(1);
+        // if(key == 32){
+        //     key = cv::waitKey();
+        // }
         // cv::waitKey();
         
-        // image_num++;
-        // std::cout << std::endl;
+        image_num++;
+        std::cout << std::endl;
 
     }
     

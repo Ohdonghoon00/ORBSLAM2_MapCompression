@@ -60,21 +60,21 @@ target_link_libraries(GT_trajectory Lib)
 add_executable(VPStest_euroc main_euroc.cpp )
 target_link_libraries(VPStest_euroc Lib)
 
-add_executable(VPStest_euroc_Compressed main_euroc_compressed.cpp )
-target_link_libraries(VPStest_euroc_Compressed Lib)
+# add_executable(VPStest_euroc_Compressed main_euroc_compressed.cpp )
+# target_link_libraries(VPStest_euroc_Compressed Lib)
 
 
 # Evaluation
-add_executable(LoadResult LoadResult.cpp)
-target_link_libraries(LoadResult Lib)
+# add_executable(LoadResult LoadResult.cpp)
+# target_link_libraries(LoadResult Lib)
 
 
 add_executable(Evaluation_euroc Evaluation_euroc.cpp)
 target_link_libraries(Evaluation_euroc Lib)
 
 # for debug
-add_executable(Query_one_Image Query_one_Image.cpp )
-target_link_libraries(Query_one_Image Lib)
+# add_executable(Query_one_Image Query_one_Image.cpp )
+# target_link_libraries(Query_one_Image Lib)
 
 
 

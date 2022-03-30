@@ -14,6 +14,8 @@ void DataBase::serialize(Archive &ar, const unsigned int version)
         ar & KeyPointInMap;
         ar & LeftKFimg;
         ar & RightKFimg;
+        ar & kfPoses;
+        ar & dbow2Descriptors;
 
 }
 template void DataBase::serialize(boost::archive::binary_iarchive&, const unsigned int);

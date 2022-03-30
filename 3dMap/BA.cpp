@@ -7,6 +7,7 @@
 #include "BA.h"
 #include "utils.h"
 #include "map_viewer.h"
+#include "ORBextractor.h"
 
 #include <opencv2/core.hpp>
 #include "opencv2/opencv.hpp"
@@ -41,6 +42,14 @@ int main(int argc, char** argv)
     // ReadKFPose(EurocGTPath, &EurocgtPoses, &timeStamps);
     std::cout << "EurocgtPoses size : " << EurocgtPoses.size() << std::endl;
     
+    // Save DB kfPose and descriptor
+    int nFeatures = 4000;
+    float scaleFactor = 1.2;
+    int nlevels = 8;
+    int iniThFAST = 20;
+    int minThFAST = 7;
+    ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);    
+
     // int idx = 300;
     int outlierNum = 0;
     for(size_t i = 0; i < DB->KFtoMPIdx.size(); i++){
@@ -60,6 +69,7 @@ int main(int argc, char** argv)
         }
     }
     std::cout << " outlier Num : " << outlierNum << std::endl;
+    
     // Viewer
     glutInit(&argc, argv);
     initialize_window();
@@ -77,6 +87,8 @@ int main(int argc, char** argv)
         glFlush();
         
         ceres::Problem global_BA; 
+        DB->kfPoses.clear();
+        DB->dbow2Descriptors.clear();
         for(int j = 0; j < DB->KFtoMPIdx.size(); j++){
             
             std::vector<cv::KeyPoint> imgPoints_ = DB->GetKF2dPoint(j);
@@ -91,7 +103,14 @@ int main(int argc, char** argv)
                 int id = DB->KFtoMPIdx[j][i];
                 double* X = (double*)(&(DB->Landmarks[id]));
                 global_BA.AddResidualBlock(map_only_cost_func, NULL, X); 
-            } 
+            }
+            cv::Mat mask, Descriptors;
+            std::vector<cv::KeyPoint> keypoint;
+            cv::Mat imageDB = DB->LeftKFimg[j];            
+            ORBfeatureAndDescriptor(imageDB, mask, keypoint, Descriptors);
+            DB->kfPoses[j] = EurocgtPoses[poseIdx];
+            DB->dbow2Descriptors[j] = Descriptors;            
+
         }
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::ITERATIVE_SCHUR;

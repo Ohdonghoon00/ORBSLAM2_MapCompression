@@ -186,6 +186,19 @@ Eigen::Matrix4d To44RT(std::vector<double> pose)
     return RT;
 }
 
+Vector6d ProjectionTo6DOFPoses(cv::Mat R, cv::Mat T)
+{
+    Eigen::Matrix4d Pose;
+    cv::Rodrigues(R, R);
+    Pose << R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), T.at<double>(0, 0),
+            R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), T.at<double>(1, 0),
+            R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), T.at<double>(2, 0),
+            0, 0, 0, 1;
+    Pose = Pose.inverse();
+    Vector6d Pose_ = To6DOF(Pose);
+    return Pose_;   
+}
+
 double ToAngle(Eigen::Matrix4d LidarRotation)
 {
     Eigen::Matrix3d rot = LidarRotation.block<3, 3>(0, 0);
@@ -203,6 +216,8 @@ Eigen::Vector3d ToAxis(Eigen::Matrix4d LidarRotation)
 
     return Axis;
 }
+
+
 
 float VerticalAngle(Eigen::Vector3d p){
   return atan(p.z() / sqrt(p.x() * p.x() + p.y() * p.y())) * 180 / M_PI;

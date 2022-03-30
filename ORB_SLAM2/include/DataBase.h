@@ -6,7 +6,7 @@
 #include "BoostArchiver.h"
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
-
+#include "Converter.h"
 
 
 
@@ -26,9 +26,13 @@ public:
     std::map< int, std::vector< int > > KFtoMPIdx; // KFid - MPidx 
     std::map< int, std::vector< cv::KeyPoint > > KeyPointInMap;
     std::vector<double> timestamps;
+    std::map< int, Vector6d > kfPoses;
 
     // Keyframe Img
     std::vector<cv::Mat> LeftKFimg, RightKFimg;
+
+    // for LoopClosure
+    std::map< int, cv::Mat > dbow2Descriptors;
 
     DataBase(const DataBase &tc)
     {
@@ -39,6 +43,8 @@ public:
         timestamps = tc.timestamps;
         LeftKFimg = tc.LeftKFimg;
         RightKFimg = tc.RightKFimg;
+        kfPoses = tc.kfPoses;
+        dbow2Descriptors = tc.dbow2Descriptors;
     }
 
     // for save/load 

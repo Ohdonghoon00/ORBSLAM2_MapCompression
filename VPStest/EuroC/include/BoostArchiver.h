@@ -25,6 +25,7 @@
 
 #include "Thirdparty/DBoW2/DBoW2/BowVector.h"
 #include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
+#include "Parameter.h"
 
 BOOST_SERIALIZATION_SPLIT_FREE(::cv::Mat)
 namespace boost{
@@ -100,6 +101,15 @@ namespace boost{
         ar & p.x;
         ar & p.y;
         ar & p.z;
+    }
+    template<class Archive>
+    void serialize(Archive& ar, ::Vector6d &p, const unsigned int version){
+        ar & p[0];
+        ar & p[1];
+        ar & p[2];
+        ar & p[3];
+        ar & p[4];
+        ar & p[5];
     }
     }
 }

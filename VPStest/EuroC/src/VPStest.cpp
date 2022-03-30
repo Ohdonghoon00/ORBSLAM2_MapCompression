@@ -22,13 +22,13 @@ void VPStest::InputDBdescriptorTovoc(DataBase *DB, OrbDatabase *db)
         // std::cout << " KF num : " << i << "     Keypoint num : " << (DB->GetKFMatDescriptor(i)).size() << std::endl;  
         
         // Input Voc
-        cv::Mat DB_image = DB->LeftKFimg[i];
-        cv::Mat mask_, DBDescriptor_;
-        std::vector<cv::KeyPoint> DBKeypoints_;
+        // cv::Mat DB_image = DB->LeftKFimg[i];
+        // cv::Mat mask_, DBDescriptor_;
+        // std::vector<cv::KeyPoint> DBKeypoints_;
         // cv::Ptr<cv::ORB> orb = cv::ORB::create(nFeatures);
         // orb->detectAndCompute(DB_image, mask_, DBKeypoints_, DBDescriptor_);
-        ORBfeatureAndDescriptor(DB_image, mask_, DBKeypoints_, DBDescriptor_);        
-        std::vector<cv::Mat> DBDescriptors = MatToVectorMat(DBDescriptor_);
+        // ORBfeatureAndDescriptor(DB_image, mask_, DBKeypoints_, DBDescriptor_);        
+        std::vector<cv::Mat> DBDescriptors = MatToVectorMat(DB->dbow2Descriptors[i]);
         db->add(DBDescriptors);
     }    
 }
@@ -89,22 +89,22 @@ cv::Mat VPStest::InputQueryImg(std::string QueryFile)
     cv::VideoCapture video;
     if(!video.open(QueryFile)){
         std::cout << " No query image " << std::endl;
-        break;
+        
     }
     video >> image;
 
     return image;
 }
 
-cv::Mat VPStest::InputQueryImg(const QueryDB query, int imageNum)
+void VPStest::InputQueryImg(QueryDB *query, int imageNum)
 {
-    cv::Mat qImg = query.qImgs[imageNum];
-    if(qImg.empty()) {
+    query->qImg = query->qImgs[imageNum].clone();
+    if(query->qImg.empty()) {
         std::cout << " Error at input query img " << std::endl; 
-        break;
+        // break;
     }
-    if (qImg.channels() > 1) cv::cvtColor(qImg, qImg, cv::COLOR_RGB2GRAY);
-    return qImg;
+    if (query->qImg.channels() > 1) cv::cvtColor(query->qImg, query->qImg, cv::COLOR_RGB2GRAY);
+    qImgNum = imageNum;
 }
 
 std::vector<cv::KeyPoint> VPStest::ORBFeatureExtract(cv::Mat img)
@@ -190,7 +190,7 @@ std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<
     return ReprojectErr;
 }
 
-int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, cv::Mat Qimg)
+int VPStest::FindReferenceKF(DataBase* DB, QueryDB query)
 {
     std::map<int, std::vector<cv::DMatch>> MatchResults;
     std::vector<double> PnPinlierRatios;
@@ -199,15 +199,16 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
     MatchResults.clear();
     MatchDB3dPoints.clear();
     MatchQ2dPoints.clear();
+    candidatesPoses.clear();
     for(int i = 0; i < CandidateKFid.size(); i ++){
         
         int KFid = CandidateKFid[i];
         cv::Mat Descriptor = DB->GetKFMatDescriptor(KFid);
         // MatchResults[KFid].resize(CandidateKFid.size());
-        MatchResults[KFid] = ORBDescriptorMatch(QDescriptor, Descriptor);
+        MatchResults[KFid] = ORBDescriptorMatch(query.qDescriptor, Descriptor);
         std::vector<cv::Point3f> DisOrderMatch3dpoint = DB->GetKF3dPoint(KFid);
         int GoodMatchNum = DisOrderMatch3dpoint.size();
-        if(DisOrderMatch3dpoint.size() > QDescriptor.rows) GoodMatchNum = QDescriptor.rows;
+        if(DisOrderMatch3dpoint.size() > query.qDescriptor.rows) GoodMatchNum = query.qDescriptor.rows;
         std::sort(MatchResults[KFid].begin(), MatchResults[KFid].end());
         std::vector<cv::DMatch> Goodmatches(MatchResults[KFid].begin(), MatchResults[KFid].begin() + GoodMatchNum); 
 
@@ -218,19 +219,24 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
 
             MatchDB3dPoints[KFid].push_back(Match3dPoint);
             
-            cv::Point2f MatchQ2dPoint(QKeypoints[Goodmatches[j].queryIdx].pt);
+            cv::Point2f MatchQ2dPoint(query.qKeypoints[Goodmatches[j].queryIdx].pt);
             MatchQ2dPoints[KFid].push_back(MatchQ2dPoint);
         }
         cv::Mat R, T, RT, inliers;
         cv::solvePnPRansac(MatchDB3dPoints[KFid], MatchQ2dPoints[KFid], K, cv::noArray(), R, T, false, 1000, 3.0F, 0.99, inliers, 0 );
         double _PnPInlierRatio = (double)inliers.rows / (double)MatchDB3dPoints[KFid].size();
-        // double _PnPinlierRatio = PnPInlierRatio(KFid);
+
+        Vector6d Pose = ProjectionTo6DOFPoses(R, T);
+        candidatesPoses.push_back(Pose);
+        
+        // candidates pose err
+        double err[2];
+        RMSError(gtPoses[qImgNum], Pose, &err[0]);
+        std::cout << err[0] << "  " << Rad2Degree(err[1]) << std::endl;
+
         PnPinlierRatios.push_back(_PnPInlierRatio);
         inlier_nums.push_back(inliers.rows);
         inliersVec.push_back(inliers);
-
-
-
     }
 
     // print value
@@ -244,26 +250,40 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
     
     int MaxRatioIdx = max_element(PnPinlierRatios.begin(), PnPinlierRatios.end()) - PnPinlierRatios.begin();
     int MaxInlierIdx = max_element(inlier_nums.begin(), inlier_nums.end()) - inlier_nums.begin();
+
     std::cout << MaxInlier << std::endl;
     std::cout << MaxInlierIdx << std::endl;
 
-
-    if( MaxInlier > 30)
-        return CandidateKFid[MaxInlierIdx];
-    else{
-        // std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(CandidateKFid[MaxInlierIdx]);
-        // cv::Mat matchimg;
-        // std::vector<cv::DMatch> Goodmatches_(MatchResults[CandidateKFid[MaxInlierIdx]].begin(), MatchResults[CandidateKFid[MaxInlierIdx]].begin() + 30); 
-        // cv::drawMatches(Qimg, QKeypoints, DB->LeftKFimg[CandidateKFid[MaxInlierIdx]], DB2dMatchForDraw, Goodmatches_, matchimg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
-        // cv::imshow("matchtop_", matchimg);
-        
-        // std::vector<cv::DMatch> Inliermatches = MatchResults[CandidateKFid[MaxInlierIdx]];
-        // InlierMatchResult(Inliermatches, inliersVec[MaxInlierIdx]);
-        // cv::Mat InlierMatchImg;
-        // cv::drawMatches(Qimg, QKeypoints, DB->LeftKFimg[CandidateKFid[MaxInlierIdx]], DB2dMatchForDraw, Inliermatches, InlierMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
-        // cv::imshow("inlierMatch", InlierMatchImg);
-        return -1;
+    if(MaxRatioIdx == MaxInlierIdx){
+        if(MaxInlier > 30)
+            return CandidateKFid[MaxInlierIdx];
+        else
+            return -1;
     }
+    else{
+        if(inlier_nums[MaxRatioIdx] > 30 && MaxRatio > 0.1)
+            return CandidateKFid[MaxInlierIdx];
+        else
+            return -1;
+    }
+
+
+    // if( MaxInlier > 30)
+    //     return CandidateKFid[MaxInlierIdx];
+    // else{
+    //     // std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(CandidateKFid[MaxInlierIdx]);
+    //     // cv::Mat matchimg;
+    //     // std::vector<cv::DMatch> Goodmatches_(MatchResults[CandidateKFid[MaxInlierIdx]].begin(), MatchResults[CandidateKFid[MaxInlierIdx]].begin() + 30); 
+    //     // cv::drawMatches(Qimg, QKeypoints, DB->LeftKFimg[CandidateKFid[MaxInlierIdx]], DB2dMatchForDraw, Goodmatches_, matchimg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
+    //     // cv::imshow("matchtop_", matchimg);
+        
+    //     // std::vector<cv::DMatch> Inliermatches = MatchResults[CandidateKFid[MaxInlierIdx]];
+    //     // InlierMatchResult(Inliermatches, inliersVec[MaxInlierIdx]);
+    //     // cv::Mat InlierMatchImg;
+    //     // cv::drawMatches(Qimg, QKeypoints, DB->LeftKFimg[CandidateKFid[MaxInlierIdx]], DB2dMatchForDraw, Inliermatches, InlierMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
+    //     // cv::imshow("inlierMatch", InlierMatchImg);
+    //     return -1;
+    // }
     // // Place Recognition debug
     // cv::Mat BestRatioImage = DB->LeftKFimg[CandidateKFid[MaxRatioIdx]];
     // cv::imshow("BestRatioImage", BestRatioImage);
@@ -272,25 +292,26 @@ int VPStest::FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::
 
 }
 
-double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, int KFid, Eigen::Matrix4d &Pose, cv::Mat &Inliers, std::vector<cv::DMatch> &GoodMatches_)
+double VPStest::VPStestToReferenceKF(DataBase* DB, QueryDB query, int KFid, Eigen::Matrix4d &Pose, cv::Mat &Inliers, std::vector<cv::DMatch> &GoodMatches_)
 {
     std::vector<cv::DMatch> Matches;
     std::vector<cv::Point3f> Match3dpts;
     std::vector<cv::Point2f> Match2dpts;
-    std::vector<cv::KeyPoint> DB2dpts;
+    // std::vector<cv::KeyPoint> DB2dpts;
     
     int NearSearchNum = 0;
-    float Disthres = 40.0;
+    float Disthres = 100.0;
 
     cv::Mat Descriptor = DB->GetKFMatDescriptor(KFid);
     // cv::Mat Descriptor = DB->GetNearReferenceKFMatDescriptor(KFid, NearSearchNum);
     
-    Matches = ORBDescriptorMatch(QDescriptor, Descriptor);
+    Matches = ORBDescriptorMatch(query.qDescriptor, Descriptor);
     
-    std::vector<cv::Point3f> DisOrderMatch3dpoint = DB->GetKF3dPoint(KFid);
-    // std::vector<cv::Point3f> DisOrderMatch3dpoint = DB->GetNearReferenceKF3dPoint(KFid, NearSearchNum);
-    int GoodMatchNum = DisOrderMatch3dpoint.size();
-    if(DisOrderMatch3dpoint.size() > QDescriptor.rows) GoodMatchNum = QDescriptor.rows;
+    totalLandmarks.clear();
+    totalLandmarks = DB->GetKF3dPoint(KFid);
+    // std::vector<cv::Point3f> totalLandmarks = DB->GetNearReferenceKF3dPoint(KFid, NearSearchNum);
+    int GoodMatchNum = totalLandmarks.size();
+    if(totalLandmarks.size() > query.qDescriptor.rows) GoodMatchNum = query.qDescriptor.rows;
     
     std::sort(Matches.begin(), Matches.end());
     std::vector<cv::DMatch> GoodMatches(Matches.begin(), Matches.begin() + GoodMatchNum);
@@ -306,22 +327,25 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
         }
     }
     
-    DB2dpts = DB->GetKF2dPoint(KFid);
+    qTotal2fpts.clear();
+    qTotal2fpts = KeyPoint2Point2f(query.qKeypoints);
+    // DB2dpts = DB->GetKF2dPoint(KFid);
     std::cout << " After erase match size : " << GoodMatches.size() << std::endl;
     for(int i = 0; i < GoodMatches.size(); i++){
         // std::cout << GoodMatches[i].distance << " ";
-        cv::Point3f Match3dPoint(   DisOrderMatch3dpoint[GoodMatches[i].trainIdx].x,
-                                    DisOrderMatch3dpoint[GoodMatches[i].trainIdx].y,
-                                    DisOrderMatch3dpoint[GoodMatches[i].trainIdx].z );
+        cv::Point3f Match3dPoint(   totalLandmarks[GoodMatches[i].trainIdx].x,
+                                    totalLandmarks[GoodMatches[i].trainIdx].y,
+                                    totalLandmarks[GoodMatches[i].trainIdx].z );
 
         Match3dpts.push_back(Match3dPoint);
             
-        cv::Point2f MatchQ2dPoint(QKeypoints[GoodMatches[i].queryIdx].pt);
+        cv::Point2f MatchQ2dPoint(  qTotal2fpts[GoodMatches[i].queryIdx].x,
+                                    qTotal2fpts[GoodMatches[i].queryIdx].y);
         Match2dpts.push_back(MatchQ2dPoint);
 
     }
-
     GoodMatches_ = GoodMatches;
+
 
     cv::Mat R, T, RT;
     double PnPInlierRatio = 0;
@@ -331,18 +355,11 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vec
     
         
         PnPInlierRatio = (double)Inliers.rows / (double)Match3dpts.size();
-        cv::Rodrigues(R, R);
-        Pose << R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), T.at<double>(0, 0),
-                R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), T.at<double>(1, 0),
-                R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), T.at<double>(2, 0),
-                0, 0, 0, 1;
-        Pose = Pose.inverse();
-    
-        // std::vector<float> ReprojectionErrViz = ReprojectionError(Match3dpts, Match2dpts, Pose);
-        // for(int i = 0; i < Inliers.rows; i++){
-        //     int index = Inliers.at<int>(i, 0);
-        //     std::cout << ReprojectionErrViz[index] << " ";
-        // }
+        
+        queryPose = ProjectionTo6DOFPoses(R, T);
+        queryPose4d = To44RT(queryPose);
+        Pose = queryPose4d;
+
     
     return PnPInlierRatio;
 
@@ -363,18 +380,84 @@ int VPStest::FindKFImageNum(int KFid, DataBase* DB, std::vector<double> timestam
 void VPStest::InlierMatchResult(std::vector<cv::DMatch> &Matches, cv::Mat Inliers)
 {
 
-    
-    std::vector<cv::KeyPoint> QMatch2dpts;
+    inlierLandmarks.clear();
+    qInlier2fpts.clear();
     std::vector<cv::DMatch> Matches_;
 
     for(int i = 0; i < Inliers.rows; i++){
         int index = Inliers.at<int>(i, 0);
-                                    
+        cv::Point3f Match3dPoint(   totalLandmarks[Matches[index].trainIdx].x,
+                                    totalLandmarks[Matches[index].trainIdx].y,
+                                    totalLandmarks[Matches[index].trainIdx].z );                                    
 
-            
+        inlierLandmarks.push_back(Match3dPoint);
+        
+        cv::Point2f MatchQ2dPoint(  qTotal2fpts[Matches[index].queryIdx].x,
+                                    qTotal2fpts[Matches[index].queryIdx].y);
+        qInlier2fpts.push_back(MatchQ2dPoint);
+        
         Matches_.push_back(Matches[index]);
     }
     
+    ReprojectionError(inlierLandmarks, qInlier2fpts, queryPose4d);
+
     Matches.clear();
     Matches = Matches_;
+}
+
+std::vector<float> VPStest::ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose)
+{
+    projection2fpts.clear();
+
+    Eigen::Matrix4Xf WorldPoints = HomogeneousForm(WPts);
+    Eigen::Matrix3Xf ImagePoints = HomogeneousForm(ImgPts);
+
+    Eigen::Matrix3Xf ReprojectPoints(3, WorldPoints.cols());
+    Pose = Pose.inverse();
+    Eigen::Matrix4f Pose_ = Pose.cast<float>();
+    Eigen::Matrix<float, 3, 4> PoseRT;
+    PoseRT = Pose_.block<3, 4>(0, 0);
+    Eigen::MatrixXf K_ = Mat2Eigen(K);
+    ReprojectPoints = PoseRT * WorldPoints;
+
+    for(int i = 0; i < ReprojectPoints.cols(); i++){
+        ReprojectPoints(0, i) /= ReprojectPoints(2, i);
+        ReprojectPoints(1, i) /= ReprojectPoints(2, i);
+        ReprojectPoints(2, i) /= ReprojectPoints(2, i);
+    }
+    
+    ReprojectPoints = K_ * ReprojectPoints;
+    
+    std::vector<float> ReprojectErr(WorldPoints.cols());
+    for(int i = 0; i < WorldPoints.cols(); i++){
+        ReprojectErr[i] = std::sqrt( (ImagePoints(0, i) - ReprojectPoints(0, i)) * 
+                                     (ImagePoints(0, i) - ReprojectPoints(0, i)) + 
+                                     (ImagePoints(1, i) - ReprojectPoints(1, i)) *
+                                     (ImagePoints(1, i) - ReprojectPoints(1, i)) );
+        // std::cout << ReprojectErr[i] << " ";
+        cv::Point2f prof2fpts(ReprojectPoints(0, i), ReprojectPoints(1, i));
+        projection2fpts.push_back(prof2fpts);
+    }
+    std::cout << std::endl;
+
+    return ReprojectErr;
+}
+
+void VPStest::RMSError(Vector6d EsPose, Vector6d gtPose, double *err)
+{
+    // err [0] -> trans , [1] -> rot
+   
+    // RSE Error (root - square error)
+    Eigen::Matrix4d RelativePose = To44RT(gtPose).inverse() * To44RT(EsPose);
+        
+    // trans
+    Eigen::Vector3d RelativeTrans;
+    RelativeTrans << RelativePose(0, 3), RelativePose(1, 3), RelativePose(2, 3);
+    err[0] = std::sqrt(RelativeTrans.dot(RelativeTrans));
+        
+    // rotation
+    Eigen::Matrix3d RelativeRot_ = RelativePose.block<3, 3>(0, 0);
+    Eigen::Vector3d RelativeRot = ToVec3(RelativeRot_);
+    err[1] = std::sqrt(RelativeRot.dot(RelativeRot));
+
 }

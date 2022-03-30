@@ -29,9 +29,7 @@ class VPStest
 public:
     
     VPStest()
-    {
-        ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
-    }
+    {}
 
 
     cv::Ptr<cv::ORB> orb = cv::ORB::create(featureNum);
@@ -41,9 +39,9 @@ public:
 
     void SetCandidateKFid(DBoW2::QueryResults ret);
 
-    int FindReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, cv::Mat Qimg);
+    int FindReferenceKF(DataBase* DB, QueryDB query);
     double PnPInlierRatio(int KFid);
-    double VPStestToReferenceKF(DataBase* DB, cv::Mat QDescriptor, std::vector<cv::KeyPoint> QKeypoints, int KFid, Eigen::Matrix4d &Pose, cv::Mat &Inliers, std::vector<cv::DMatch> &GoodMatches_);
+    double VPStestToReferenceKF(DataBase* DB, QueryDB query, int KFid, Eigen::Matrix4d &Pose, cv::Mat &Inliers, std::vector<cv::DMatch> &GoodMatches_);
 
     int LoadDBfile(std::string dbFilePath, DataBase *DB);
     void InputDBdescriptorTovoc(DataBase *DB, OrbDatabase *db);
@@ -52,28 +50,34 @@ public:
     void InputQuerydb(QueryDB *query, std::string timeStampfilePath, std::string queryImgdirPath);
 
     cv::Mat InputQueryImg(std::string QueryFile);
-    cv::Mat InputQueryImg(const QueryDB query, int imageNum);
+    void InputQueryImg(QueryDB *query, int imageNum);
     std::vector<cv::KeyPoint> ORBFeatureExtract(cv::Mat img);
     cv::Mat ORBDescriptor(cv::Mat img, std::vector<cv::KeyPoint> keypoints);
     std::vector<cv::DMatch> ORBDescriptorMatch(cv::Mat trainDescriptor, cv::Mat queryDescriptor);
     int FindKFImageNum(int KFid, DataBase* DB, std::vector<double> timestamps);
     void InlierMatchResult(std::vector<cv::DMatch> &Matches, cv::Mat Inliers);
+    std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose);
+    void RMSError(Vector6d EsPose, Vector6d gtPose, double *err);
 
 public:
     
     int featureNum;
-    int nFeatures = 4000;
-    float scaleFactor = 1.2;
-    int nlevels = 8;
-    int iniThFAST = 20;
-    int minThFAST = 7;
-    ORBextractor ORBfeatureAndDescriptor;
     
     // result
-    Vector6d QueryPose;
+    std::vector<Vector6d> candidatesPoses;
+
+    Vector6d queryPose;
+    Eigen::Matrix4d queryPose4d; 
+
+    // for debug
+    std::vector<cv::Point3f> totalLandmarks, inlierLandmarks;
+    std::vector<cv::Point2f> qTotal2fpts, qInlier2fpts, projection2fpts;
+
+    
 
 
     // gt pose
+    int qImgNum; // for evaluation
     std::vector<Vector6d> gtPoses;
 
 
@@ -81,19 +85,25 @@ public:
 
 struct QueryDB
 {
-    // Query 
+    QueryDB()
+    {}
+    
+    // Total Query db 
     std::vector<cv::Mat> qImgs;
     std::vector<double> qTimestamps;
-    cv::Mat qMask;
-    cv::Mat qDescriptor;
+    
+    // current db
+    cv::Mat qImg, qMask, qDescriptor;
     std::vector<cv::KeyPoint> qKeypoints;
 
     void clear()
     {
+        qImg.release();
         qMask.release();
         qDescriptor.release();
         qKeypoints.clear();
     }
+
         
 };
 

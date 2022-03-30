@@ -8,10 +8,11 @@
 #include <opencv2/core.hpp>
 #include "opencv2/opencv.hpp"
 
+#include "Parameter.h"
 
 
-typedef Eigen::Matrix<float, 6, 1> Vector6f;
-typedef Eigen::Matrix<double, 6, 1> Vector6d;
+
+
 
 
 extern Eigen::Vector3d Origin;
@@ -38,6 +39,7 @@ Eigen::Quaterniond ToQuaternion(const Vector6d Pose);
 Eigen::Matrix4f To44RT(Vector6f pose);
 Eigen::Matrix4d To44RT(Vector6d pose);
 Eigen::Matrix4d To44RT(std::vector<double> pose);
+Vector6d ProjectionTo6DOFPoses(cv::Mat R, cv::Mat T);
 double ToAngle(Eigen::Matrix4d LidarRotation);
 Eigen::Vector3d ToAxis(Eigen::Matrix4d LidarRotation);
 float VerticalAngle(Eigen::Vector3d p);
