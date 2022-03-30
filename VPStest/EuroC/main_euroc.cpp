@@ -119,11 +119,17 @@ int main(int argc, char **argv)
         std::cout << " Image Num is  :  " << image_num << "      !!!!!!!!!!!!!!!!!!!!" << std::endl;
 
         // debug
-        // if(image_num < 310){
+        // if(image_num < 466){
         //     image_num++;
         //     continue;
         // }
+        int add = 1700;
+        while(add < 1770){
+        cv::imshow("dd", query.qImgs[add++]);
+        cv::waitKey();
 
+        }
+        
         // Extract query feature and descriptor
         ORBfeatureAndDescriptor(query.qImg, query.qMask, query.qKeypoints, query.qDescriptor);
         // Place Recognition
@@ -247,7 +253,7 @@ int main(int argc, char **argv)
         // if(key == 32){
         //     key = cv::waitKey();
         // }
-        // cv::waitKey();
+        cv::waitKey();
         
         image_num++;
         std::cout << std::endl;

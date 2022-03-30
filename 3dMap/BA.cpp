@@ -119,7 +119,7 @@ int main(int argc, char** argv)
         ceres::Solver::Summary summary;
         std::cout << " Start optimize map point " << std::endl;
         std::cout << DB->Landmarks[1000] << std::endl;
-        ceres::Solve(options, &global_BA, &summary);
+        // ceres::Solve(options, &global_BA, &summary);
         std::cout << summary.BriefReport() << std::endl;                
         std::cout << " End optimize map point " << std::endl;
         std::cout << DB->Landmarks[1000] << std::endl;
@@ -140,7 +140,7 @@ int main(int argc, char** argv)
         }
         glFlush();
         
-        std::string saveDbPath = "EurocMH01_DB_original_fullba.bin";
+        std::string saveDbPath = "EurocMH01_DB_original_.bin";
         std::ofstream out(saveDbPath, std::ios_base::binary);
         if (!out)
         {

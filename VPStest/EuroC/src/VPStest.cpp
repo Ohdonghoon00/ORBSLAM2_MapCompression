@@ -19,7 +19,7 @@ void VPStest::InputDBdescriptorTovoc(DataBase *DB, OrbDatabase *db)
 {
     for(size_t i = 0; i < DB->KFtoMPIdx.size(); i++){
 
-        // std::cout << " KF num : " << i << "     Keypoint num : " << (DB->GetKFMatDescriptor(i)).size() << std::endl;  
+        std::cout << " KF num : " << i << "     Keypoint num : " << (DB->GetKFMatDescriptor(i)).size() << std::endl;  
         
         // Input Voc
         // cv::Mat DB_image = DB->LeftKFimg[i];
@@ -232,7 +232,9 @@ int VPStest::FindReferenceKF(DataBase* DB, QueryDB query)
         // candidates pose err
         double err[2];
         RMSError(gtPoses[qImgNum], Pose, &err[0]);
-        std::cout << err[0] << "  " << Rad2Degree(err[1]) << std::endl;
+        double err_[2];
+        RMSError(DB->kfPoses[KFid], Pose, &err_[0]);
+        std::cout << err[0] << "  " << Rad2Degree(err[1]) << " *** " << err_[0] << "  " << Rad2Degree(err_[1]) << std::endl;
 
         PnPinlierRatios.push_back(_PnPInlierRatio);
         inlier_nums.push_back(inliers.rows);
@@ -262,7 +264,7 @@ int VPStest::FindReferenceKF(DataBase* DB, QueryDB query)
     }
     else{
         if(inlier_nums[MaxRatioIdx] > 30 && MaxRatio > 0.1)
-            return CandidateKFid[MaxInlierIdx];
+            return CandidateKFid[MaxRatioIdx];
         else
             return -1;
     }
