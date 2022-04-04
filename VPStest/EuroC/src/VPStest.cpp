@@ -463,3 +463,32 @@ void VPStest::RMSError(Vector6d EsPose, Vector6d gtPose, double *err)
     err[1] = std::sqrt(RelativeRot.dot(RelativeRot));
 
 }
+
+void VPStest::TrackOpticalFlow(cv::Mat &previous, cv::Mat &current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts)
+{
+    std::vector<uchar> status;
+    cv::Mat err;
+
+    cv::calcOpticalFlowPyrLK(previous, current, previous_pts, current_pts, status, err);
+
+
+    const int image_x_size_ = previous.cols;
+    const int image_y_size_ = previous.rows;
+
+    // remove err point
+    int indexCorrection = 0;
+
+    for( int i = 0; i < status.size(); i++)
+    {
+        cv::Point2f pt = current_pts.at(i- indexCorrection);
+        if((pt.x < 0)||(pt.y < 0 )||(pt.x > image_x_size_)||(pt.y > image_y_size_)) status[i] = 0;
+        if (status[i] == 0)	
+        {
+                    
+                    previous_pts.erase ( previous_pts.begin() + i - indexCorrection);
+                    current_pts.erase (current_pts.begin() + i - indexCorrection);
+                    indexCorrection++;
+        }
+
+    }   
+}
