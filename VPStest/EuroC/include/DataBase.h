@@ -5,7 +5,7 @@
 #include <set>
 #include "BoostArchiver.h"
 #include "Parameter.h"
-
+#include "Converter.h"
 
 
 
@@ -42,7 +42,8 @@ public:
 
     cv::Mat GetKFMatDescriptor(int idx);
     std::vector<cv::Point3f> GetKF3dPoint(int idx);
-    std::vector<cv::KeyPoint> GetKF2dPoint(int idx);
+    std::vector<cv::KeyPoint> GetKFkeypoint(int idx);
+    std::vector<cv::Point2f> GetKF2fpts(int idx);
     cv::Mat GetNearReferenceKFMatDescriptor(int rkidx, int nearRkN);
     std::vector<cv::Point3f> GetNearReferenceKF3dPoint(int rkidx, int nearRkN);
 

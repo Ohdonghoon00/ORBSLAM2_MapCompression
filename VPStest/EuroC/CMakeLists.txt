@@ -33,6 +33,7 @@ src/ORBextractor.cc
 src/map_viewer.cpp
 src/VPStestResult.cpp
 src/VPStest.cpp
+src/Converter.cpp
  )
 
 target_link_libraries(Lib

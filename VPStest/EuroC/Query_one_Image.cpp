@@ -79,7 +79,7 @@ int main(int argc, char **argv)
         cv::Mat mask_, DBDescriptor_;
         std::vector<cv::KeyPoint> DBKeypoints_;
         ORBfeatureAndDescriptor(DB_image, mask_, DBKeypoints_, DBDescriptor_);        
-        std::vector<cv::Mat> DBDescriptors = MatToVectorMat(DBDescriptor_);
+        std::vector<cv::Mat> DBDescriptors = Converter::MatToVectorMat(DBDescriptor_);
         db.add(DBDescriptors);
     }
     std::cout << db << std::endl;
@@ -158,7 +158,7 @@ int main(int argc, char **argv)
         QueryResults ret;
         ret.clear();
     
-        std::vector<cv::Mat> VQDescriptors = MatToVectorMat(QDescriptors);
+        std::vector<cv::Mat> VQDescriptors = Converter::MatToVectorMat(QDescriptors);
         db.query(VQDescriptors, ret, 10);
         std::cout << ret << std::endl;
         std::cout << "High score keyframe  num : "  << ret[0].Id << std::endl;
@@ -224,7 +224,7 @@ int main(int argc, char **argv)
         }
             
         // For Draw Inliers Match
-        std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(ReferenceKFId);
+        std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKFkeypoint(ReferenceKFId);
         VPStest.InlierMatchResult(Matches, Inliers);
         cv::Mat MatchImg;
         std::cout << " Match size : " << Matches.size() << std::endl;

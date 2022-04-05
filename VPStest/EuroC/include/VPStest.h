@@ -58,7 +58,7 @@ public:
     void InlierMatchResult(std::vector<cv::DMatch> &Matches, cv::Mat Inliers);
     std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose);
     void RMSError(Vector6d EsPose, Vector6d gtPose, double *err);
-    void TrackOpticalFlow(cv::Mat &previous, cv::Mat &current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts);
+    void TrackOpticalFlow(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts);
 
 
 public:

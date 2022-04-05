@@ -86,7 +86,7 @@ int main(int argc, char **argv)
         cv::Mat mask_, DBDescriptor_;
         std::vector<cv::KeyPoint> DBKeypoints_;
         ORBfeatureAndDescriptor(DB_image, mask_, DBKeypoints_, DBDescriptor_);        
-        std::vector<cv::Mat> DBDescriptors = MatToVectorMat(DBDescriptor_);
+        std::vector<cv::Mat> DBDescriptors = Converter::MatToVectorMat(DBDescriptor_);
         db.add(DBDescriptors);
         std::cout << setprecision(19) << DB->timestamps[i] << std::endl;
     }
@@ -223,7 +223,7 @@ int main(int argc, char **argv)
         QueryResults ret;
         ret.clear();
     
-        std::vector<cv::Mat> VQDescriptors = MatToVectorMat(QDescriptors);
+        std::vector<cv::Mat> VQDescriptors = Converter::MatToVectorMat(QDescriptors);
         db.query(VQDescriptors, ret, 10);
         std::cout << ret << std::endl;
         std::cout << "High score keyframe  num : "  << ret[0].Id << std::endl;
@@ -257,7 +257,7 @@ int main(int argc, char **argv)
         // draw Total MatchImg
         cv::Mat TotalMatchImg;
         std::cout << " Match size : " << Matches.size() << std::endl;
-        std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(ReferenceKFId);
+        std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKFkeypoint(ReferenceKFId);
         cv::drawMatches(QueryImg, QKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, TotalMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
         cv::imshow("TotalMatchImg", TotalMatchImg);
 

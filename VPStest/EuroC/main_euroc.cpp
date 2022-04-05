@@ -135,7 +135,7 @@ int main(int argc, char **argv)
         // Place Recognition
         QueryResults ret;
         ret.clear();
-        std::vector<cv::Mat> VQDescriptors = MatToVectorMat(query.qDescriptor);
+        std::vector<cv::Mat> VQDescriptors = Converter::MatToVectorMat(query.qDescriptor);
         db.query(VQDescriptors, ret, 20);
         std::cout << ret << std::endl;
         std::cout << "High score keyframe  num : "  << ret[0].Id << std::endl;
@@ -215,7 +215,7 @@ int main(int argc, char **argv)
         }
             
         // For Draw Inliers Match
-        std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(ReferenceKFId);
+        std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKFkeypoint(ReferenceKFId);
         cv::Mat allMatchImg;
         std::cout << " Total Match size : " << Matches.size() << std::endl;
         std::vector<cv::DMatch> goodMatches(Matches.begin(), Matches.begin() + 100);

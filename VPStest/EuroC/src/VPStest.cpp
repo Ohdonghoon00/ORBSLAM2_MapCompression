@@ -28,7 +28,7 @@ void VPStest::InputDBdescriptorTovoc(DataBase *DB, OrbDatabase *db)
         // cv::Ptr<cv::ORB> orb = cv::ORB::create(nFeatures);
         // orb->detectAndCompute(DB_image, mask_, DBKeypoints_, DBDescriptor_);
         // ORBfeatureAndDescriptor(DB_image, mask_, DBKeypoints_, DBDescriptor_);        
-        std::vector<cv::Mat> DBDescriptors = MatToVectorMat(DB->dbow2Descriptors[i]);
+        std::vector<cv::Mat> DBDescriptors = Converter::MatToVectorMat(DB->dbow2Descriptors[i]);
         db->add(DBDescriptors);
     }    
 }
@@ -157,15 +157,15 @@ double VPStest::PnPInlierRatio(int KFid)
 
 std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose)
 {
-    Eigen::Matrix4Xf WorldPoints = HomogeneousForm(WPts);
-    Eigen::Matrix3Xf ImagePoints = HomogeneousForm(ImgPts);
+    Eigen::Matrix4Xf WorldPoints = Converter::HomogeneousForm(WPts);
+    Eigen::Matrix3Xf ImagePoints = Converter::HomogeneousForm(ImgPts);
 
     Eigen::Matrix3Xf ReprojectPoints(3, WorldPoints.cols());
     Pose = Pose.inverse();
     Eigen::Matrix4f Pose_ = Pose.cast<float>();
     Eigen::Matrix<float, 3, 4> PoseRT;
     PoseRT = Pose_.block<3, 4>(0, 0);
-    Eigen::MatrixXf K_ = Mat2Eigen(K);
+    Eigen::MatrixXf K_ = Converter::Mat2Eigen(K);
     ReprojectPoints = PoseRT * WorldPoints;
     for(int i = 0; i < ReprojectPoints.cols(); i++){
         ReprojectPoints(0, i) /= ReprojectPoints(2, i);
@@ -203,6 +203,12 @@ int VPStest::FindReferenceKF(DataBase* DB, QueryDB query)
     for(int i = 0; i < CandidateKFid.size(); i ++){
         
         int KFid = CandidateKFid[i];
+        
+        // test optical flow
+        std::vector<cv::Point2f> DB2dpts = DB->GetKF2fpts(KFid);
+        std::vector<cv::Point2f> q2fpts;
+        TrackOpticalFlow(DB->LeftKFimg[KFid], query.qImg, DB2dpts, q2fpts);
+
         cv::Mat Descriptor = DB->GetKFMatDescriptor(KFid);
         // MatchResults[KFid].resize(CandidateKFid.size());
         MatchResults[KFid] = ORBDescriptorMatch(query.qDescriptor, Descriptor);
@@ -273,7 +279,7 @@ int VPStest::FindReferenceKF(DataBase* DB, QueryDB query)
     // if( MaxInlier > 30)
     //     return CandidateKFid[MaxInlierIdx];
     // else{
-    //     // std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKF2dPoint(CandidateKFid[MaxInlierIdx]);
+    //     // std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKFkeypoint(CandidateKFid[MaxInlierIdx]);
     //     // cv::Mat matchimg;
     //     // std::vector<cv::DMatch> Goodmatches_(MatchResults[CandidateKFid[MaxInlierIdx]].begin(), MatchResults[CandidateKFid[MaxInlierIdx]].begin() + 30); 
     //     // cv::drawMatches(Qimg, QKeypoints, DB->LeftKFimg[CandidateKFid[MaxInlierIdx]], DB2dMatchForDraw, Goodmatches_, matchimg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
@@ -330,8 +336,8 @@ double VPStest::VPStestToReferenceKF(DataBase* DB, QueryDB query, int KFid, Eige
     }
     
     qTotal2fpts.clear();
-    qTotal2fpts = KeyPoint2Point2f(query.qKeypoints);
-    // DB2dpts = DB->GetKF2dPoint(KFid);
+    qTotal2fpts = Converter::KeyPoint2Point2f(query.qKeypoints);
+    // DB2dpts = DB->GetKFkeypoint(KFid);
     std::cout << " After erase match size : " << GoodMatches.size() << std::endl;
     for(int i = 0; i < GoodMatches.size(); i++){
         // std::cout << GoodMatches[i].distance << " ";
@@ -411,15 +417,15 @@ std::vector<float> VPStest::ReprojectionError(std::vector<cv::Point3f> WPts, std
 {
     projection2fpts.clear();
 
-    Eigen::Matrix4Xf WorldPoints = HomogeneousForm(WPts);
-    Eigen::Matrix3Xf ImagePoints = HomogeneousForm(ImgPts);
+    Eigen::Matrix4Xf WorldPoints = Converter::HomogeneousForm(WPts);
+    Eigen::Matrix3Xf ImagePoints = Converter::HomogeneousForm(ImgPts);
 
     Eigen::Matrix3Xf ReprojectPoints(3, WorldPoints.cols());
     Pose = Pose.inverse();
     Eigen::Matrix4f Pose_ = Pose.cast<float>();
     Eigen::Matrix<float, 3, 4> PoseRT;
     PoseRT = Pose_.block<3, 4>(0, 0);
-    Eigen::MatrixXf K_ = Mat2Eigen(K);
+    Eigen::MatrixXf K_ = Converter::Mat2Eigen(K);
     ReprojectPoints = PoseRT * WorldPoints;
 
     for(int i = 0; i < ReprojectPoints.cols(); i++){
@@ -464,7 +470,7 @@ void VPStest::RMSError(Vector6d EsPose, Vector6d gtPose, double *err)
 
 }
 
-void VPStest::TrackOpticalFlow(cv::Mat &previous, cv::Mat &current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts)
+void VPStest::TrackOpticalFlow(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts)
 {
     std::vector<uchar> status;
     cv::Mat err;

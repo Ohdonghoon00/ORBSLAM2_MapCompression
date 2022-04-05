@@ -47,9 +47,16 @@ std::vector<cv::Point3f> DataBase::GetKF3dPoint(int idx)
     return KFLandmark;
 }
 
-std::vector<cv::KeyPoint> DataBase::GetKF2dPoint(int idx)
+std::vector<cv::KeyPoint> DataBase::GetKFkeypoint(int idx)
 {
     std::vector< cv::KeyPoint > KF2dPoints = KeyPointInMap[idx];
+    return KF2dPoints;
+}
+
+std::vector<cv::Point2f> DataBase::GetKF2fpts(int idx)
+{
+    std::vector<cv::KeyPoint> KF2dPoints_ = KeyPointInMap[idx];
+    std::vector<cv::Point2f> KF2dPoints = Converter::KeyPoint2Point2f(KF2dPoints_);
     return KF2dPoints;
 }
 

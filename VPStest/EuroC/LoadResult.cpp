@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     auto it = std::find(OriginalResultImgNum.begin(), OriginalResultImgNum.end(), num);
     int index = it - OriginalResultImgNum.begin();
     int DBSelKFNum = OriginalResultSelectedKF[index];
-    std::vector< cv::KeyPoint > KF2dPoints = DB->GetKF2dPoint(DBSelKFNum);
+    std::vector< cv::KeyPoint > KF2dPoints = DB->GetKFkeypoint(DBSelKFNum);
     cv::Mat img;
     cv::drawKeypoints(DB->LeftKFimg[DBSelKFNum], KF2dPoints, img);
     cv::imshow("DB_keypoints", img);
