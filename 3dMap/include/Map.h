@@ -11,8 +11,12 @@ public:
     Map()
     {}
 
+    
+
     // Landmark
-    std::map< int, cv::Point3f > Map3dpts;
+    std::vector< cv::Point3f > Map3dpts;
+    std::vector< int > MapIds;
+    
     std::map< int, cv::Mat> MapDesctriptors;
 
     // Keyframe

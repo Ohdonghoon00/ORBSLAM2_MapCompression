@@ -37,21 +37,29 @@ int main(int argc, char** argv)
     int KFcnt = 0;
     cv::Mat K = GetK(IntrinsicData);
     std::cout << K << std::endl;
+    
     // Extract feature
     int nFeatures = 2000;
     float scaleFactor = 1.2;
     int nlevels = 8;
     int iniThFAST = 20;
     int minThFAST = 7;
+    
+    int max_keypoint = 1500;
+    int maxIds = 0;
+    double KeyframeTrackRatio = 0.60;
+
+
     // ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
     // cv::Ptr<cv::ORB> orb = cv::ORB::create(nFeatures);
-    cv::Ptr<Feature2D> sift = cv::xfeatures2d::SIFT::create(nFeatures);
+    // cv::Ptr<Feature2D> sift = cv::xfeatures2d::SIFT::create(nFeatures);
 
     //
     Keyframe Last_KF, Curr_KF;
     Map MapDB;
-    std::map< int, std::vector<cv::DMatch>> matches;
-    int GoodMatchNum = 300;
+    Track Track;
+    // std::map< int, std::vector<cv::DMatch>> matches;
+    // int GoodMatchNum = 300;
 
     // Load img and gt Pose
     // std::string KFimgPath_ = argv[1];
@@ -96,7 +104,8 @@ int main(int argc, char** argv)
         // cv::Mat image2 = Queryimgs2[KFcnt];
         // video >> image;
         // if(image.empty()) break;
-        // if (image.channels() > 1) cv::cvtColor(image, image, cv::COLOR_RGB2GRAY);
+        if (image1.channels() > 1) cv::cvtColor(image1, image1, cv::COLOR_RGB2GRAY);
+        if (image2.channels() > 1) cv::cvtColor(image2, image2, cv::COLOR_RGB2GRAY);
         // MapDB.KFimg[KFcnt] = image;
         
         std::cout << " KF img Num : " << KFcnt << "  @@@@@@@@@@@@@@@@@ " << std::endl;
@@ -106,17 +115,98 @@ int main(int argc, char** argv)
             // extract
         cv::Mat mask, Descriptors;
         std::vector<cv::Point2f> keypoint;
-        Curr_KF.EraseClass();
-        Last_KF.EraseClass();
+        // Last_KF.EraseClass();
         // ORBfeatureAndDescriptor(image1, Last_KF.mask, Last_KF.KeyPoints, Last_KF.Descriptors);
         // ORBfeatureAndDescriptor(image2, Curr_KF.mask, Curr_KF.KeyPoints, Curr_KF.Descriptors);
         // cv::goodFeaturesToTrack(image, Curr_KF.keypoint, nFeatures, 0.01, 10);
         // Curr_KF.KeyPoints = Converter::Point2f2KeyPoint(Curr_KF.keypoint);
         // orb->detectAndCompute(image1, Last_KF.mask, Last_KF.KeyPoints, Last_KF.Descriptors);
         // orb->detectAndCompute(image2, Curr_KF.mask, Curr_KF.KeyPoints, Curr_KF.Descriptors);
-        sift->detectAndCompute(image1, Last_KF.mask, Last_KF.KeyPoints, Last_KF.Descriptors);
-        sift->detectAndCompute(image2, Curr_KF.mask, Curr_KF.KeyPoints, Curr_KF.Descriptors);
-        std::cout << "feature num : " << Curr_KF.KeyPoints.size() << std::endl;
+        // sift->detectAndCompute(image1, Last_KF.mask, Last_KF.KeyPoints, Last_KF.Descriptors);
+        // sift->detectAndCompute(image2, Curr_KF.mask, Curr_KF.KeyPoints, Curr_KF.Descriptors);
+
+/////////// stereo KLT initial /////////////
+        if(KFcnt == 0){
+            Curr_KF.EraseClass();
+            cv::goodFeaturesToTrack(image1, Curr_KF.lkeypoint, max_keypoint, 0.01, 10);
+            std::cout << "feature num : " << Curr_KF.lkeypoint.size() << std::endl;
+            OpticalFlowStereo(image1, image2, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            std::cout << "track feature num : " << Curr_KF.lkeypoint.size() << std::endl;
+            
+            // draw left and right match image
+            cv::Mat MatchImg = DrawKLTmatchLine(image1, image2, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            cv::imshow("matchImg", MatchImg);
+            
+            // // Triangulation
+            cv::Mat P0 = K * Vec6To34ProjMat(KFgtPoses[KFcnt]);
+            cv::Mat P1 = K * rVec6To34ProjMat(KFgtPoses[KFcnt]);
+            cv::Mat X;
+            cv::triangulatePoints(P0, P1, Curr_KF.lkeypoint, Curr_KF.rkeypoint, X);
+            std::vector<cv::Point3f> MapPts = ToXYZ(X);
+            // std::cout << Proj34ToPose(P0) << std::endl;
+            // std::cout << GetCam1ToCam0(Cam0ToBodyData, Cam1ToBodyData) << std::endl;
+            // std::cout << Proj34ToPose(P1) << std::endl;
+            // for(int i = 0; i < MapPts.size(); i++) std::cout << MapPts[i] << std::endl;
+            
+            // Save id and MapDB
+            for(int i = maxIds; i < maxIds + Curr_KF.lkeypoint.size(); i++){
+                Curr_KF.lptsIds.push_back(i);
+                MapDB.Map3dpts.push_back(MapPts[i - maxIds]);
+                MapDB.MapIds.push_back(i);
+            }
+            maxIds += Curr_KF.lkeypoint.size();
+            std::cout << Curr_KF.lptsIds.size() << std::endl;
+            // prepare track
+            std::cout << "prepare track" << std::endl;
+            Track.EraseData();
+                        std::cout << "prepare track" << std::endl;
+
+            Track.SetLastData(Curr_KF.lkeypoint, Curr_KF.lptsIds, image1);
+            KFcnt++;
+            continue;
+        }
+
+
+        // // Tracking
+        Track.SetCurrImg(image1);
+        OpticalFlowTracking(Track.last_image, Track.curr_image, Track.last_trackingPts, Track.curr_trackingPts, Track.trackIds);
+        int afterTrackNum = Track.curr_trackingPts.size();
+        Track.trackingRatio = (double)afterTrackNum / (double)Track.beforetrackNum;
+        
+        cv::Mat MatchImg = DrawKLTmatchLine(Track.last_image, Track.curr_image, Track.last_trackingPts, Track.curr_trackingPts);
+        cv::imshow("matchImg", MatchImg);
+
+        Track.PrepareNextFrame();
+        std::cout << Track.trackingRatio << std::endl;
+        
+        // New Keyframe
+        if(Track.trackingRatio < KeyframeTrackRatio){
+            
+            std::cout << " New Keyframe !! " << std::endl;
+            Curr_KF.EraseClass();
+            cv::goodFeaturesToTrack(image1, Curr_KF.lkeypoint, max_keypoint, 0.01, 10);
+            std::cout << "feature num : " << Curr_KF.lkeypoint.size() << std::endl;
+            OpticalFlowStereo(image1, image2, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            std::cout << "track feature num : " << Curr_KF.lkeypoint.size() << std::endl;
+
+            // draw left and right match image
+            cv::Mat MatchImg = DrawKLTmatchLine(image1, image2, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            cv::imshow("matchImg", MatchImg);
+
+            // // Triangulation
+            cv::Mat P0 = K * Vec6To34ProjMat(KFgtPoses[KFcnt]);
+            cv::Mat P1 = K * rVec6To34ProjMat(KFgtPoses[KFcnt]);
+            cv::Mat X;
+            cv::triangulatePoints(P0, P1, Curr_KF.lkeypoint, Curr_KF.rkeypoint, X);
+            std::vector<cv::Point3f> MapPts = ToXYZ(X);
+
+            // Save id and MapDB
+            for(int i = maxIds; i < maxIds + Curr_KF.lkeypoint.size(); i++){
+                Curr_KF.lptsIds.push_back(i);
+                MapDB.Map3dpts.push_back(MapPts[i - maxIds]);
+                MapDB.MapIds.push_back(i);
+            }
+        }
         // initial value
         // if(KFcnt == 0){
         //     KFcnt++;
@@ -126,41 +216,40 @@ int main(int argc, char** argv)
 
             // match
         // cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_HAMMING, true);
-        cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_L2, true);
-        // cv::Ptr<cv::DescriptorMatcher> matcher = cv::FlannBasedMatcher::create();
-        std::vector<cv::DMatch> DescriptorMatch;
-        matcher->match(Last_KF.Descriptors, Curr_KF.Descriptors, DescriptorMatch);
-        std::sort(DescriptorMatch.begin(), DescriptorMatch.end());
-        matches[KFcnt - 1] = DescriptorMatch;
+        // cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_L2, true);
+        // // cv::Ptr<cv::DescriptorMatcher> matcher = cv::FlannBasedMatcher::create();
+        // std::vector<cv::DMatch> DescriptorMatch;
+        // matcher->match(Last_KF.Descriptors, Curr_KF.Descriptors, DescriptorMatch);
+        // std::sort(DescriptorMatch.begin(), DescriptorMatch.end());
+        // matches[KFcnt - 1] = DescriptorMatch;
         
-        // Last_KF.keypoint.clear();
-        for(int i = 0; i < matches[KFcnt - 1].size(); i++){
-            Last_KF.keypoint.push_back(Last_KF.KeyPoints[matches[KFcnt - 1][i].queryIdx].pt);
-            Curr_KF.keypoint.push_back(Curr_KF.KeyPoints[matches[KFcnt - 1][i].trainIdx].pt);
-        }
-        cv::Mat E, inlier_mask, R, t;
-        std::cout << Last_KF.keypoint.size() << " " << Curr_KF.keypoint.size() << std::endl;
-        E = cv::findEssentialMat(Last_KF.keypoint, Curr_KF.keypoint, fx, c, cv::RANSAC, 0.99, 1, inlier_mask);
-        int inlierNum = cv::recoverPose(E, Last_KF.keypoint, Curr_KF.keypoint, R, t, fx, c, inlier_mask);
-        std::cout << inlierNum << std::endl;
-        // Triangulation
-        cv::Mat P0 = K * Vec6To34Mat(KFgtPoses[KFcnt - 1]);
-        cv::Mat P1 = K * Vec6To34Mat(KFgtPoses[KFcnt]);
-        cv::Mat X;
-        cv::triangulatePoints(P0, P1, Last_KF.keypoint, Curr_KF.keypoint, X);
-        std::vector<cv::Point3f> MapPts = ToXYZ(X);
-        std::vector<float> ReprojErr = ReprojectionError(MapPts, Last_KF.keypoint, To44RT(KFgtPoses[KFcnt - 1]));
-        /////////// Remove Outlier ////////////////////
+        // // Last_KF.keypoint.clear();
+        // for(int i = 0; i < matches[KFcnt - 1].size(); i++){
+        //     Last_KF.keypoint.push_back(Last_KF.KeyPoints[matches[KFcnt - 1][i].queryIdx].pt);
+        //     Curr_KF.keypoint.push_back(Curr_KF.KeyPoints[matches[KFcnt - 1][i].trainIdx].pt);
+        // }
+        // cv::Mat E, inlier_mask, R, t;
+        // std::cout << Last_KF.keypoint.size() << " " << Curr_KF.keypoint.size() << std::endl;
+        // E = cv::findEssentialMat(Last_KF.keypoint, Curr_KF.keypoint, fx, c, cv::RANSAC, 0.99, 1, inlier_mask);
+        // int inlierNum = cv::recoverPose(E, Last_KF.keypoint, Curr_KF.keypoint, R, t, fx, c, inlier_mask);
+        // std::cout << inlierNum << std::endl;
+        // // Triangulation
+        // cv::Mat P0 = K * Vec6To34Mat(KFgtPoses[KFcnt - 1]);
+        // cv::Mat P1 = K * Vec6To34Mat(KFgtPoses[KFcnt]);
+        // cv::Mat X;
+        // cv::triangulatePoints(P0, P1, Last_KF.keypoint, Curr_KF.keypoint, X);
+        // std::vector<cv::Point3f> MapPts = ToXYZ(X);
+        // std::vector<float> ReprojErr = ReprojectionError(MapPts, Last_KF.keypoint, To44RT(KFgtPoses[KFcnt - 1]));
+        // /////////// Remove Outlier ////////////////////
             
-            // hamming distance
-        std::vector<cv::DMatch> GoodDescriptorMatch(DescriptorMatch.begin(), DescriptorMatch.begin() + GoodMatchNum);
+        //     // hamming distance
+        // std::vector<cv::DMatch> GoodDescriptorMatch(DescriptorMatch.begin(), DescriptorMatch.begin() + GoodMatchNum);
         
-        // Draw Match Img
-        cv::Mat MatchImg;
-        cv::drawMatches(image1, Last_KF.KeyPoints, image2, Curr_KF.KeyPoints, GoodDescriptorMatch, MatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
-        cv::imshow("Matchimg", MatchImg);
+        // // Draw Match Img
+        // cv::Mat MatchImg;
+        // cv::drawMatches(image1, Last_KF.KeyPoints, image2, Curr_KF.KeyPoints, GoodDescriptorMatch, MatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
+        // cv::imshow("Matchimg", MatchImg);
 
-        
 
         cv::waitKey();
         // Last_KF.EraseClass();

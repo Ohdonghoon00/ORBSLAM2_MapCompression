@@ -56,6 +56,14 @@ Eigen::Matrix4d GetCam2Body(double * Cam2BodyData)
     return Cam2Body.transpose();
 }
 
+Eigen::Matrix4d GetCam1ToCam0(double * Cam2BodyData0, double * Cam2BodyData1)
+{
+    Eigen::Matrix4d Cam0ToBody = Eigen::Map<Eigen::Matrix4d>(Cam2BodyData0);
+    Eigen::Matrix4d Cam1ToBody = Eigen::Map<Eigen::Matrix4d>(Cam2BodyData1);
+    Eigen::Matrix4d Cam1ToCam0 = Cam0ToBody.inverse() * Cam1ToBody;
+    return Cam1ToCam0.transpose();
+}
+
 int ReadgtPose(const std::string gtpath, std::vector<Vector6d>* poses)
 {
     std::ifstream gtFile(gtpath, std::ifstream::in);
@@ -218,14 +226,36 @@ Eigen::Matrix4d To44RT(std::vector<double> pose)
     return RT;
 }
 
-cv::Mat Vec6To34Mat(Vector6d pose)
+cv::Mat Vec6To34ProjMat(Vector6d pose)
 {
-    Eigen::Matrix4d CamPose = To44RT(pose);
-    double data[] = {   CamPose(0, 0), CamPose(0, 1), CamPose(0, 2), CamPose(0, 3),
-                        CamPose(1, 0), CamPose(1, 1), CamPose(1, 2), CamPose(1, 3),
-                        CamPose(2, 0), CamPose(2, 1), CamPose(2, 2), CamPose(2, 3)};
-    cv::Mat Pose34(3, 4, CV_64F, data);
-    return Pose34.clone();
+    Vector6d proj = ToProjection(pose);
+    Eigen::Matrix4d CamProj = To44RT(proj);
+    double data[] = {   CamProj(0, 0), CamProj(0, 1), CamProj(0, 2), CamProj(0, 3),
+                        CamProj(1, 0), CamProj(1, 1), CamProj(1, 2), CamProj(1, 3),
+                        CamProj(2, 0), CamProj(2, 1), CamProj(2, 2), CamProj(2, 3)};
+    cv::Mat Proj34(3, 4, CV_64F, data);
+    return Proj34.clone();
+}
+
+cv::Mat rVec6To34ProjMat(Vector6d pose)
+{
+    Eigen::Matrix4d lCamPose = To44RT(pose);
+    Eigen::Matrix4d rCamPose = lCamPose * GetCam1ToCam0(Cam0ToBodyData, Cam1ToBodyData);
+    Vector6d rCamPos = To6DOF(rCamPose);
+    cv::Mat Proj34 = Vec6To34ProjMat(rCamPos);
+    return Proj34.clone();
+
+
+}
+
+Eigen::Matrix4d Proj34ToPose(cv::Mat Proj)
+{
+    Eigen::Matrix4d Proj_;
+    Proj_ << Proj.at<double>(0, 0), Proj.at<double>(0, 1), Proj.at<double>(0, 2), Proj.at<double>(0, 3),
+            Proj.at<double>(1, 0), Proj.at<double>(1, 1), Proj.at<double>(1, 2), Proj.at<double>(1, 3),
+            Proj.at<double>(2, 0), Proj.at<double>(2, 1), Proj.at<double>(2, 2), Proj.at<double>(2, 3),
+            0, 0, 0, 1;
+    return Proj_.inverse();
 }
 
 double ToAngle(Eigen::Matrix4d LidarRotation)
@@ -389,7 +419,7 @@ int FindTimestampIdx(const double a, const std::vector<double> b)
     }
 
 
-void TrackOpticalFlow(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts)
+void OpticalFlowStereo(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts)
 {
     std::vector<uchar> status;
     cv::Mat err;
@@ -416,4 +446,54 @@ void TrackOpticalFlow(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f
         }
 
     }   
+}
+
+void OpticalFlowTracking(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts, std::vector<int> &trackIds)
+{
+    std::vector<uchar> status;
+    cv::Mat err;
+
+    cv::calcOpticalFlowPyrLK(previous, current, previous_pts, current_pts, status, err);
+
+
+    const int image_x_size_ = previous.cols;
+    const int image_y_size_ = previous.rows;
+
+    // remove err point
+    int indexCorrection = 0;
+
+    for( int i = 0; i < status.size(); i++)
+    {
+        cv::Point2f pt = current_pts.at(i- indexCorrection);
+        if((pt.x < 0)||(pt.y < 0 )||(pt.x > image_x_size_)||(pt.y > image_y_size_)) status[i] = 0;
+        if (status[i] == 0)	
+        {
+                    
+                    previous_pts.erase ( previous_pts.begin() + i - indexCorrection);
+                    current_pts.erase (current_pts.begin() + i - indexCorrection);
+                    trackIds.erase (trackIds.begin() + i - indexCorrection);
+                    indexCorrection++;
+        }
+
+    }   
+}
+
+cv::Mat DrawKLTmatchLine(cv::Mat image1, cv::Mat image2, std::vector<cv::Point2f> previous_pts, std::vector<cv::Point2f> current_pts)
+{
+    cv::Mat MatchImg; 
+    cv::hconcat(image1, image2, MatchImg);
+    const int rNum = image1.cols;
+    std::vector<cv::Point2f> rImgPtsf(current_pts.size());
+    for(int i = 0; i < current_pts.size(); i++){
+        cv::Point2f pts(current_pts[i].x + rNum, current_pts[i].y);
+        rImgPtsf[i] = pts;
+    }
+    if (MatchImg.channels() < 3) cv::cvtColor(MatchImg, MatchImg, cv::COLOR_GRAY2RGB);
+    for(int i = 0; i < previous_pts.size(); i++){
+        cv::line(MatchImg, previous_pts[i], rImgPtsf[i], cv::Scalar(0,255,0), 1);
+        cv::circle(MatchImg, previous_pts[i], 3, cv::Scalar(255,0, 0), 1);
+        cv::circle(MatchImg, rImgPtsf[i], 3, cv::Scalar(255,0, 0), 1);
+    }
+
+    return MatchImg.clone();
 }
