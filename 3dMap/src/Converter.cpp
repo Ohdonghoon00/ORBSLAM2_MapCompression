@@ -1,19 +1,8 @@
-#pragma once
-
-#include<opencv2/core.hpp>
-#include "opencv2/opencv.hpp"
-
-#include "Parameter.h"
+#include "Converter.h"
 
 
 
-
-
-
-
-
-
-
+namespace Converter{
 
 // Converter
 cv::Mat VectorMatToMat(std::vector<cv::Mat> Descriptor)
@@ -37,17 +26,6 @@ std::vector<cv::Mat> MatToVectorMat(cv::Mat Descriptor)
     return Descriptors;
 }
 
-Eigen::Quaterniond ToQuaternion(Eigen::Matrix4d &pose)
-{
-    Eigen::Matrix3d rot;
-    rot <<  pose(0, 0), pose(0, 1), pose(0, 2),
-            pose(1, 0), pose(1, 1), pose(1, 2),
-            pose(2, 0), pose(2, 1), pose(2, 2);
-
-    Eigen::Quaterniond q(rot);
-
-    return q;
-}
 
 std::vector<cv::KeyPoint> Point2f2KeyPoint(std::vector<cv::Point2f> pts2f)
 {
@@ -65,19 +43,19 @@ std::vector<cv::Point2f> KeyPoint2Point2f(std::vector<cv::KeyPoint> KeyPoints)
     return pts2f;
 }
 
-Eigen::Vector3d To3DOF(Eigen::Quaterniond q)
-{
-    Eigen::Matrix3d R(q);
-    Eigen::AngleAxisd rod(R);
-    Eigen::Vector3d r(rod.axis());
-    double angle = rod.angle();
-    r *= angle;
+// Eigen::Vector3d To3DOF(Eigen::Quaterniond q)
+// {
+//     Eigen::Matrix3d R(q);
+//     Eigen::AngleAxisd rod(R);
+//     Eigen::Vector3d r(rod.axis());
+//     double angle = rod.angle();
+//     r *= angle;
 
-    Eigen::Vector3d r_pose;
-    r_pose << r.x(), r.y(), r.z();
+//     Eigen::Vector3d r_pose;
+//     r_pose << r.x(), r.y(), r.z();
 
-    return r_pose;
-}
+//     return r_pose;
+// }
 
 Eigen::Matrix4Xf HomogeneousForm(std::vector<cv::Point3f> Wpts)
 {
@@ -107,8 +85,9 @@ Eigen::MatrixXf Mat2Eigen(cv::Mat a)
     Eigen::MatrixXf b(a.rows, a.cols);
     for(int i = 0; i < b.rows(); i++){
         for(int j = 0; j < b.cols(); j++){
-            b(i, j) = (float)a.at<double>(i, j);
+            b(i, j) = a.at<float>(i, j);
         }
     }
     return b;
+}
 }

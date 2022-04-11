@@ -111,7 +111,7 @@ int main(int argc, char** argv)
         // ORBfeatureAndDescriptor(image1, Last_KF.mask, Last_KF.KeyPoints, Last_KF.Descriptors);
         // ORBfeatureAndDescriptor(image2, Curr_KF.mask, Curr_KF.KeyPoints, Curr_KF.Descriptors);
         // cv::goodFeaturesToTrack(image, Curr_KF.keypoint, nFeatures, 0.01, 10);
-        // Curr_KF.KeyPoints = Point2f2KeyPoint(Curr_KF.keypoint);
+        // Curr_KF.KeyPoints = Converter::Point2f2KeyPoint(Curr_KF.keypoint);
         // orb->detectAndCompute(image1, Last_KF.mask, Last_KF.KeyPoints, Last_KF.Descriptors);
         // orb->detectAndCompute(image2, Curr_KF.mask, Curr_KF.KeyPoints, Curr_KF.Descriptors);
         sift->detectAndCompute(image1, Last_KF.mask, Last_KF.KeyPoints, Last_KF.Descriptors);

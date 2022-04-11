@@ -11,7 +11,8 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 
 include_directories(
-  "/usr/include/eigen3"
+include  
+"/usr/include/eigen3"
   ${OpenCV_INCLUDE_DIRS}
   # ${Pangolin_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}
@@ -25,11 +26,12 @@ if (NOT BOOST_SERIALIZATION)
 endif()
 
 add_library(Lib SHARED
-utils.cpp
+src/utils.cpp
 
-DataBase.cpp
-ORBextractor.cc
-map_viewer.cpp
+src/DataBase.cpp
+src/ORBextractor.cc
+src/map_viewer.cpp
+src/Converter.cpp
 )
 
 target_link_libraries(Lib

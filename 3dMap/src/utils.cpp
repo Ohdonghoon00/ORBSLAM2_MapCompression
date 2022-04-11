@@ -298,15 +298,15 @@ std::vector<cv::Point3f> ToXYZ(cv::Mat &X)
 
 std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose)
 {
-    Eigen::Matrix4Xf WorldPoints = HomogeneousForm(WPts);
-    Eigen::Matrix3Xf ImagePoints = HomogeneousForm(ImgPts);
+    Eigen::Matrix4Xf WorldPoints = Converter::HomogeneousForm(WPts);
+    Eigen::Matrix3Xf ImagePoints = Converter::HomogeneousForm(ImgPts);
 
     Eigen::Matrix3Xf ReprojectPoints(3, WorldPoints.cols());
     Pose = Pose.inverse();
     Eigen::Matrix4f Pose_ = Pose.cast<float>();
     Eigen::Matrix<float, 3, 4> PoseRT;
     PoseRT = Pose_.block<3, 4>(0, 0);
-    Eigen::MatrixXf K_ = Mat2Eigen(K);
+    Eigen::MatrixXf K_ = Converter::Mat2Eigen(K);
     ReprojectPoints = PoseRT * WorldPoints;
 
     for(int i = 0; i < ReprojectPoints.cols(); i++){
@@ -387,3 +387,33 @@ int FindTimestampIdx(const double a, const std::vector<double> b)
         }       
 
     }
+
+
+void TrackOpticalFlow(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts)
+{
+    std::vector<uchar> status;
+    cv::Mat err;
+
+    cv::calcOpticalFlowPyrLK(previous, current, previous_pts, current_pts, status, err);
+
+
+    const int image_x_size_ = previous.cols;
+    const int image_y_size_ = previous.rows;
+
+    // remove err point
+    int indexCorrection = 0;
+
+    for( int i = 0; i < status.size(); i++)
+    {
+        cv::Point2f pt = current_pts.at(i- indexCorrection);
+        if((pt.x < 0)||(pt.y < 0 )||(pt.x > image_x_size_)||(pt.y > image_y_size_)) status[i] = 0;
+        if (status[i] == 0)	
+        {
+                    
+                    previous_pts.erase ( previous_pts.begin() + i - indexCorrection);
+                    current_pts.erase (current_pts.begin() + i - indexCorrection);
+                    indexCorrection++;
+        }
+
+    }   
+}

@@ -59,6 +59,7 @@ std::vector<cv::Point3f> ToXYZ(cv::Mat &X);
 std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose);
 int FindTimestampIdx(const double a, const std::vector<double> b);
 int readCsvGtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps);
+void TrackOpticalFlow(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts);
 
 // namespace constants
 // {
