@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     
     Eigen::Matrix4d Cam2Body = GetCam2Body(Cam0ToBodyData);
     Eigen::Matrix4d initialPose = To44RT(dbInitialPoses[5]) * Cam2Body;
-    
+    std::cout << To44RT(dbInitialPoses[5]) << std::endl;
     
     // Save Pose
     std::ofstream gtCamPose;
@@ -75,15 +75,16 @@ int main(int argc, char** argv)
         if(Minvalue > 1000) continue;
         
         std::string CamTimestampsImgPath = std::to_string(int64_t(CamTimestamps[i]));
-        std::string imgPath = "/home/ohdonghoon/EuroC/MH01/RectCam0/" + CamTimestampsImgPath + ".png";
-        cv::Mat image = cv::imread(imgPath);
+        // std::string imgPath = "/home/ohdonghoon/EuroC/MH01/RectCam0/" + CamTimestampsImgPath + ".png";
+        // cv::Mat image = cv::imread(imgPath);
         
-        std::string SortImgPath = "/home/ohdonghoon/EuroC/MH01/RectCam0_for_EsPose/" + CamTimestampsImgPath + ".png";
-        cv::imwrite(SortImgPath, image );
+        // std::string SortImgPath = "/home/ohdonghoon/EuroC/MH01/RectCam0_for_EsPose/" + CamTimestampsImgPath + ".png";
+        // cv::imwrite(SortImgPath, image );
         
-        std::cout << i << " " << Minidx << " " << Minvalue << std::endl;
+        // std::cout << i << " " << Minidx << " " << Minvalue << std::endl;
         Eigen::Matrix4d GtImu44poses = To44RT(GTImuPoses[Minidx]);
-        Eigen::Matrix4d camSLAMPoses = initialPose.inverse() * GtImu44poses * Cam2Body;        
+        Eigen::Matrix4d adg = GtImu44poses * Cam2Body; 
+        Eigen::Matrix4d camSLAMPoses = initialPose.inverse() * adg;        
         Vector6d pose = To6DOF(camSLAMPoses);
 
         gtCamPose << CamTimestampsImgPath << " " << pose[0] << " " << pose[1] << " " << pose[2] << " " << pose[3] << " " << pose[4] << " " << pose[5] << std::endl;

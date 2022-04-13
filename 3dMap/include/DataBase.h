@@ -6,7 +6,9 @@
 #include "BoostArchiver.h"
 #include "Parameter.h"
 
-
+#include "Map.h"
+#include "Keyframe.h"
+#include "Converter.h"
 
 
 class DataBase
@@ -30,14 +32,14 @@ public:
     // Keyframe Img
     std::vector<cv::Mat> LeftKFimg, RightKFimg;
 
-    // for LoopClosure
+    // for dbow2 LoopClosure
     std::map< int, cv::Mat > dbow2Descriptors;
 
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version);
 
-   
+    void SaveResultToDB(DataBase *db, Map map, std::vector<Keyframe> kf);
 
 
     cv::Mat GetKFMatDescriptor(int idx);

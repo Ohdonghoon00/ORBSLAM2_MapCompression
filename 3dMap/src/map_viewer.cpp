@@ -26,6 +26,18 @@ void initialize_window()
 //     glClear(GL_COLOR_BUFFER_BIT); 
 // }
 
+
+// template <typename K, typename V>
+// void showMP(std::map<K, V>& m) {
+//     for (typename std::map<K, V>::iterator itr = m.begin(); itr != m.end(); ++itr)
+//     {
+//         // std::cout << itr->first << " " << itr->second << std::endl;
+//         GLdouble X_map(itr->second.x), Y_map(itr->second.y), Z_map(itr->second.z);
+//         show_trajectory(X_map, Y_map, Z_map, 0.0, 0.0, 0.0, 0.01);        
+//     }
+// }             
+
+
 void show_trajectory(const GLdouble &x, const GLdouble &y, const GLdouble &z, const double r, const double g, const double b, const double size)
 {
     glColor3f(r,g,b);

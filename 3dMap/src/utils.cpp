@@ -11,7 +11,10 @@ double fx(435.2046959714599), fy(435.2046959714599), cx(367.4517211914062), cy(2
 double IntrinsicData[] = {   fx, 0.0,cx, 
                             0.0, fy, cy,
                             0.0, 0.0, 1.0}; 
-
+float fx_(435.2046959714599), fy_(435.2046959714599), cx_(367.4517211914062), cy_(252.2008514404297);
+float IntrinsicData_[] = {   fx_, 0.0,cx_, 
+                            0.0, fy_, cy_,
+                            0.0, 0.0, 1.0};
 
 ///// Extrinsic /////
 // Machine Hall  body(IMU) - cam0 //
@@ -28,6 +31,7 @@ double Cam1ToBodyData[] = {0.0125552670891, -0.999755099723, 0.0182237714554, -0
 
 
 cv::Mat K = GetK(IntrinsicData);
+cv::Mat Kf = GetKf(IntrinsicData_);
 cv::Point2d c(cx, cy); 
 
 
@@ -50,6 +54,12 @@ cv::Mat GetK(double* IntrinsicData)
     return K;
 }
 
+cv::Mat GetKf(float* IntrinsicData)
+{
+    cv::Mat K(3, 3, CV_32FC1, IntrinsicData);
+    return K;
+}
+
 Eigen::Matrix4d GetCam2Body(double * Cam2BodyData)
 {
     Eigen::Matrix4d Cam2Body = Eigen::Map<Eigen::Matrix4d>(Cam2BodyData);
@@ -59,9 +69,13 @@ Eigen::Matrix4d GetCam2Body(double * Cam2BodyData)
 Eigen::Matrix4d GetCam1ToCam0(double * Cam2BodyData0, double * Cam2BodyData1)
 {
     Eigen::Matrix4d Cam0ToBody = Eigen::Map<Eigen::Matrix4d>(Cam2BodyData0);
+    Eigen::Matrix4d Cam0ToBody_ = Cam0ToBody.transpose();
+    
     Eigen::Matrix4d Cam1ToBody = Eigen::Map<Eigen::Matrix4d>(Cam2BodyData1);
-    Eigen::Matrix4d Cam1ToCam0 = Cam0ToBody.inverse() * Cam1ToBody;
-    return Cam1ToCam0.transpose();
+    Eigen::Matrix4d Cam1ToBody_ = Cam1ToBody.transpose();
+    
+    Eigen::Matrix4d Cam1ToCam0 = Cam0ToBody_.inverse() * Cam1ToBody_;
+    return Cam1ToCam0;
 }
 
 int ReadgtPose(const std::string gtpath, std::vector<Vector6d>* poses)
@@ -82,7 +96,7 @@ int ReadgtPose(const std::string gtpath, std::vector<Vector6d>* poses)
             values.push_back(value);
         
         Vector6d pose;
-        pose << std::stod(values[0]), std::stod(values[1]), std::stod(values[2]), std::stod(values[3]), std::stod(values[4]), std::stod(values[5]);
+        pose << std::stod(values[1]), std::stod(values[2]), std::stod(values[3]), std::stod(values[4]), std::stod(values[5]), std::stod(values[6]);
         poses->push_back(pose);
     }       
 
@@ -228,8 +242,9 @@ Eigen::Matrix4d To44RT(std::vector<double> pose)
 
 cv::Mat Vec6To34ProjMat(Vector6d pose)
 {
-    Vector6d proj = ToProjection(pose);
-    Eigen::Matrix4d CamProj = To44RT(proj);
+    Eigen::Matrix4d CamPose = To44RT(pose);
+    std::cout << "lpose : " << CamPose << std::endl;
+    Eigen::Matrix4d CamProj = CamPose.inverse();
     double data[] = {   CamProj(0, 0), CamProj(0, 1), CamProj(0, 2), CamProj(0, 3),
                         CamProj(1, 0), CamProj(1, 1), CamProj(1, 2), CamProj(1, 3),
                         CamProj(2, 0), CamProj(2, 1), CamProj(2, 2), CamProj(2, 3)};
@@ -241,8 +256,13 @@ cv::Mat rVec6To34ProjMat(Vector6d pose)
 {
     Eigen::Matrix4d lCamPose = To44RT(pose);
     Eigen::Matrix4d rCamPose = lCamPose * GetCam1ToCam0(Cam0ToBodyData, Cam1ToBodyData);
-    Vector6d rCamPos = To6DOF(rCamPose);
-    cv::Mat Proj34 = Vec6To34ProjMat(rCamPos);
+    // rCamPose(0,3) = rCamPose(0,3) + 0.5;
+    std::cout << "rpose : " << rCamPose << std::endl;
+    Eigen::Matrix4d CamProj = rCamPose.inverse();
+    double data[] = {   CamProj(0, 0), CamProj(0, 1), CamProj(0, 2), CamProj(0, 3),
+                        CamProj(1, 0), CamProj(1, 1), CamProj(1, 2), CamProj(1, 3),
+                        CamProj(2, 0), CamProj(2, 1), CamProj(2, 2), CamProj(2, 3)};    
+    cv::Mat Proj34(3, 4, CV_64F, data);
     return Proj34.clone();
 
 
@@ -308,16 +328,17 @@ double Ddegree2Rad(double degree){
     return degree * M_PI / 180;
 }
 
-std::vector<cv::Point3f> ToXYZ(cv::Mat &X)
+std::vector<cv::Point3d> ToXYZ(cv::Mat &X)
 {
-    std::vector<cv::Point3f> MapPts;
+    std::vector<cv::Point3d> MapPts;
+    X.convertTo(X, CV_64F);
     for (int i = 0 ; i < X.cols; i++)
     {
         X.col(i).row(0) = X.col(i).row(0) / X.col(i).row(3);
         X.col(i).row(1) = X.col(i).row(1) / X.col(i).row(3);
         X.col(i).row(2) = X.col(i).row(2) / X.col(i).row(3);
         X.col(i).row(3) = 1;
-        MapPts.push_back(cv::Point3f(X.at<float>(0, i), X.at<float>(1, i), X.at<float>(2, i)));
+        MapPts.push_back(cv::Point3d(X.at<double>(0, i), X.at<double>(1, i), X.at<double>(2, i)));
     }
 
     return MapPts;
@@ -326,7 +347,7 @@ std::vector<cv::Point3f> ToXYZ(cv::Mat &X)
 
 
 
-std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose)
+std::vector<float> ReprojectionError(std::vector<cv::Point3d> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose)
 {
     Eigen::Matrix4Xf WorldPoints = Converter::HomogeneousForm(WPts);
     Eigen::Matrix3Xf ImagePoints = Converter::HomogeneousForm(ImgPts);
@@ -336,7 +357,7 @@ std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<
     Eigen::Matrix4f Pose_ = Pose.cast<float>();
     Eigen::Matrix<float, 3, 4> PoseRT;
     PoseRT = Pose_.block<3, 4>(0, 0);
-    Eigen::MatrixXf K_ = Converter::Mat2Eigen(K);
+    Eigen::MatrixXf K_ = Converter::Mat2Eigen(Kf);
     ReprojectPoints = PoseRT * WorldPoints;
 
     for(int i = 0; i < ReprojectPoints.cols(); i++){
@@ -358,7 +379,7 @@ std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<
                                      (ImagePoints(0, i) - ReprojectPoints(0, i)) + 
                                      (ImagePoints(1, i) - ReprojectPoints(1, i)) *
                                      (ImagePoints(1, i) - ReprojectPoints(1, i)) );
-        std::cout << ReprojectErr[i] << " ";
+        // std::cout << ReprojectErr[i] << " ";
     }
     std::cout << std::endl;
 
@@ -445,7 +466,20 @@ void OpticalFlowStereo(cv::Mat previous, cv::Mat current, std::vector<cv::Point2
                     indexCorrection++;
         }
 
-    }   
+    }
+    
+    // int indexCorrection_ = 0;
+    // int ptsNum = previous_pts.size();
+    // for(int i = 0; i < ptsNum; i++){
+    //     double diff_x = std::fabs(previous_pts[i - indexCorrection_].x - current_pts[i - indexCorrection_].x);
+    //     double diff_y = std::fabs(previous_pts[i - indexCorrection_].y - current_pts[i - indexCorrection_].y);
+    //     std::cout << diff_x << "  " << diff_y << std::endl;
+    //     if(diff_x > 30 || diff_y > 15){
+    //         previous_pts.erase ( previous_pts.begin() + i - indexCorrection_);
+    //         current_pts.erase (current_pts.begin() + i - indexCorrection_);
+    //         indexCorrection_++;           
+    //     }
+    // }
 }
 
 void OpticalFlowTracking(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts, std::vector<int> &trackIds)
@@ -475,6 +509,19 @@ void OpticalFlowTracking(cv::Mat previous, cv::Mat current, std::vector<cv::Poin
                     indexCorrection++;
         }
 
+    }
+
+    int indexCorrection_ = 0;
+    int ptsNum = previous_pts.size();
+    for(int i = 0; i < ptsNum; i++){
+        double diff_x = std::fabs(previous_pts[i - indexCorrection_].x - current_pts[i - indexCorrection_].x);
+        double diff_y = std::fabs(previous_pts[i - indexCorrection_].y - current_pts[i - indexCorrection_].y);
+        // std::cout << diff_x << "  " << diff_y << std::endl;
+        if(diff_x > 200 || diff_y > 120){
+            previous_pts.erase ( previous_pts.begin() + i - indexCorrection_);
+            current_pts.erase (current_pts.begin() + i - indexCorrection_);
+            indexCorrection_++;           
+        }
     }   
 }
 
@@ -496,4 +543,89 @@ cv::Mat DrawKLTmatchLine(cv::Mat image1, cv::Mat image2, std::vector<cv::Point2f
     }
 
     return MatchImg.clone();
+}
+
+cv::Mat DrawKLTmatchLine_vertical(cv::Mat image1, cv::Mat image2, std::vector<cv::Point2f> previous_pts, std::vector<cv::Point2f> current_pts)
+{
+    cv::Mat MatchImg; 
+    cv::vconcat(image1, image2, MatchImg);
+    const int rNum = image1.rows;
+    std::vector<cv::Point2f> rImgPtsf(current_pts.size());
+    for(int i = 0; i < current_pts.size(); i++){
+        cv::Point2f pts(current_pts[i].x , current_pts[i].y + rNum);
+        rImgPtsf[i] = pts;
+    }
+    if (MatchImg.channels() < 3) cv::cvtColor(MatchImg, MatchImg, cv::COLOR_GRAY2RGB);
+    for(int i = 0; i < previous_pts.size(); i++){
+        cv::line(MatchImg, previous_pts[i], rImgPtsf[i], cv::Scalar(0,255,0), 1);
+        cv::circle(MatchImg, previous_pts[i], 3, cv::Scalar(255,0, 0), 1);
+        cv::circle(MatchImg, rImgPtsf[i], 3, cv::Scalar(255,0, 0), 1);
+    }
+
+    return MatchImg.clone();
+}
+
+void RemoveMPoutlier(std::vector<cv::Point3d> &mp, std::vector<cv::Point2f> &lpts, std::vector<cv::Point2f> &rpts, const Vector6d pose)
+{
+    Eigen::Matrix<double, 4, 1> initCamView;
+    initCamView << 0, 0, 1, 0;
+    Eigen::Matrix4d camPose = To44RT(pose);
+    
+    Eigen::Matrix<double, 4, 1> currCamView_ = camPose * initCamView;
+    std::cout << "current view : " << currCamView_.transpose() << std::endl;
+    Eigen::Vector3d currCamView;
+    currCamView << currCamView_(0), currCamView_(1), currCamView_(2);
+    
+    // std::vector<cv::Point3d> clone_map_point(mp);
+    int mpNum = mp.size();
+    int indexCorrection = 0;
+        for(int i = 0; i < mpNum; i++){
+
+            Eigen::Vector3d mpView;
+            mpView.x() = mp[i - indexCorrection].x - pose[3];
+            mpView.y() = mp[i - indexCorrection].y - pose[4];
+            mpView.z() = mp[i - indexCorrection].z - pose[5];
+
+                    
+            // Eigen::Vector4d vecMP;
+            // vecMP << clone_map_point[i].x, clone_map_point[i].y, clone_map_point[i].z, 0;
+
+            if(currCamView.dot(mpView) < 0 || mpView.dot(mpView) > 100)
+            {
+                mp.erase(mp.begin() + i - indexCorrection);
+                lpts.erase(lpts.begin() + i - indexCorrection);
+                rpts.erase(rpts.begin() + i - indexCorrection);
+                indexCorrection++;
+            }
+                
+        }
+
+    std::cout << " remove cam back and remain landmark num :  " << mp.size() << std::endl;    
+    int indexCorrection_ = 0;
+    Eigen::Matrix4d Pose44 = To44RT(pose);
+    std::vector<float> reProjErr = ReprojectionError(mp, lpts, Pose44);
+    for(int i = 0; i < reProjErr.size(); i++){
+        if(reProjErr[i] > 3.5){
+            mp.erase(mp.begin() + i - indexCorrection_);
+            lpts.erase(lpts.begin() + i - indexCorrection_);
+            rpts.erase(rpts.begin() + i - indexCorrection_);
+        }
+    }
+}
+                        
+void RemoveOutlierMatch(std::vector<cv::Point2f> &lpts, std::vector<cv::Point2f> &rpts)
+{
+    cv::Mat inlierMask;
+    cv::Mat E = cv::findEssentialMat(lpts, rpts, fx, c, cv::RANSAC, 0.999, 1, inlierMask);
+
+    std::vector<cv::Point2f> clone_lpts(lpts);
+    std::vector<cv::Point2f> clone_rpts(rpts);
+    lpts.clear();
+    rpts.clear();
+    for(int i = 0; i < inlierMask.rows; i++){
+      if(inlierMask.at<bool>(i, 0) == 1){
+        lpts.push_back(clone_lpts[i]);
+        rpts.push_back(clone_rpts[i]);
+      }
+    }    
 }

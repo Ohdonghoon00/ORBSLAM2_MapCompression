@@ -3,6 +3,7 @@
 
 
 
+
 template<class Archive>
 void DataBase::serialize(Archive &ar, const unsigned int version)
 {
@@ -20,7 +21,20 @@ void DataBase::serialize(Archive &ar, const unsigned int version)
 template void DataBase::serialize(boost::archive::binary_iarchive&, const unsigned int);
 template void DataBase::serialize(boost::archive::binary_oarchive&, const unsigned int);
 
+void DataBase::SaveResultToDB(DataBase *db, Map map, std::vector<Keyframe> kf)
+{
+    for(int i = 0; i < kf.size(); i++){
+        
+        db->LeftKFimg.push_back(kf[i].limage);
+        db->RightKFimg.push_back(kf[i].rimage);
+        
+        db->KeyPointInMap[i] = Converter::Point2f2KeyPoint(kf[i].lkeypoint);
+        db->KFtoMPIdx[i].assign(kf[i].lptsIds.begin(), kf[i].lptsIds.end());
+        db->timestamps.push_back(kf[i].timeStamp);
+        db->kfPoses[i] = kf[i].camPose;
 
+    }
+}
 
 cv::Mat DataBase::GetKFMatDescriptor(int idx)
 {

@@ -58,7 +58,7 @@ target_link_libraries(Transform Lib)
 
 # Euroc ... make 3d map DB
 add_executable(main_3dmap main_3dmap.cpp)
-target_link_libraries(main_3dmap Lib)
+target_link_libraries(main_3dmap Lib Ceres::ceres)
 
 
 add_executable(BA BA.cpp)

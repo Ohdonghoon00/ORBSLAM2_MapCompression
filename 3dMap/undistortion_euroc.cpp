@@ -54,8 +54,9 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    cv::Mat M1l,M2l;
+    cv::Mat M1l,M2l, M1r, M2r;
     cv::initUndistortRectifyMap(K_l,D_l,R_l,P_l.rowRange(0,3).colRange(0,3),cv::Size(cols_l,rows_l),CV_32F,M1l,M2l);
+    cv::initUndistortRectifyMap(K_r,D_r,R_r,P_r.rowRange(0,3).colRange(0,3),cv::Size(cols_r,rows_r),CV_32F,M1r,M2r);
 
     // Load timestamp
     std::string timestampPath = argv[1];
@@ -74,10 +75,11 @@ int main(int argc, char **argv)
         ss << line;
         std::string QueryImgsPath = QueryPath + "/" + ss.str() +".png";
         cv::Mat img = cv::imread(QueryImgsPath);
-        std::string RectimgName_ = "/home/ohdonghoon/ORBSLAM2_MapCompression/VPStest/EuroC/DataBase/EuroC/MH03/RectCam0";
+        std::string RectimgName_ = "/home/ohdonghoon/EuroC/MH01/RectCam1_for_EsPose";
         std::string RectimgName = RectimgName_ + "/" + ss.str() +".png";
         cv::Mat imLeftRect;
-        cv::remap(img,imLeftRect,M1l,M2l,cv::INTER_LINEAR);
+        // cv::remap(img,imLeftRect,M1l,M2l,cv::INTER_LINEAR);
+        cv::remap(img,imLeftRect,M1r,M2r,cv::INTER_LINEAR);
         cv::imwrite(RectimgName, imLeftRect );
         cv::imshow("originalImg", img);
         cv::imshow("RectImg", imLeftRect);

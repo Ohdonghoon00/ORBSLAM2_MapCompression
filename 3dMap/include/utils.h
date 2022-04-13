@@ -32,6 +32,7 @@ extern cv::Point2d c;
 
 
 cv::Mat GetK(double* IntrinsicData);
+cv::Mat GetKf(float* IntrinsicData);
 Eigen::Matrix4d GetCam2Body(double * Cam2BodyData);
 Eigen::Matrix4d GetCam1ToCam0(double * Cam2BodyData0, double * Cam2BodyData1);
 int ReadgtPose(const std::string gtpath, std::vector<Vector6d>* poses);
@@ -58,13 +59,18 @@ double PointDistance(Eigen::Vector3d p1, Eigen::Vector3d p2);
 double CosRaw2(double a, double b, float ang);
 double Rad2Degree(double rad);
 double Ddegree2Rad(double degree);
-std::vector<cv::Point3f> ToXYZ(cv::Mat &X);
-std::vector<float> ReprojectionError(std::vector<cv::Point3f> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose);
+std::vector<cv::Point3d> ToXYZ(cv::Mat &X);
+std::vector<float> ReprojectionError(std::vector<cv::Point3d> WPts, std::vector<cv::Point2f> ImgPts, Eigen::Matrix4d Pose);
 int FindTimestampIdx(const double a, const std::vector<double> b);
 int readCsvGtPose(std::string gtpath, std::vector<Vector6d>* poses, std::vector<double>* timeStamps);
 void OpticalFlowStereo(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts);
 void OpticalFlowTracking(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts, std::vector<int> &trackIds);
 cv::Mat DrawKLTmatchLine(cv::Mat image1, cv::Mat image2, std::vector<cv::Point2f> previous_pts, std::vector<cv::Point2f> current_pts);
+cv::Mat DrawKLTmatchLine_vertical(cv::Mat image1, cv::Mat image2, std::vector<cv::Point2f> previous_pts, std::vector<cv::Point2f> current_pts);
+
+void RemoveMPoutlier(std::vector<cv::Point3d> &mp, std::vector<cv::Point2f> &lpts, std::vector<cv::Point2f> &rpts, const Vector6d pose);
+void RemoveOutlierMatch(std::vector<cv::Point2f> &lpts, std::vector<cv::Point2f> &rpts);
+
 
 // namespace constants
 // {

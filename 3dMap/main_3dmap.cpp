@@ -25,6 +25,7 @@
 #include "utils.h"
 #include "Map.h"
 #include "Keyframe.h"
+#include "BA.h"
 
 using namespace std;
 using namespace cv;
@@ -39,36 +40,37 @@ int main(int argc, char** argv)
     std::cout << K << std::endl;
     
     // Extract feature
-    int nFeatures = 2000;
+    int nFeatures = 3000;
     float scaleFactor = 1.2;
     int nlevels = 8;
     int iniThFAST = 20;
     int minThFAST = 7;
     
     int max_keypoint = 1500;
+    int minDis = 8;
     int maxIds = 0;
-    double KeyframeTrackRatio = 0.60;
-
+    double KeyframeTrackRatio = 0.75;
+    int TrackNum = 100;
+    double lossfuncParameter = 1 / ((fx + fy) / 2);
+    // Viewer
+    glutInit(&argc, argv);
+    initialize_window();
 
     // ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
     // cv::Ptr<cv::ORB> orb = cv::ORB::create(nFeatures);
-    // cv::Ptr<Feature2D> sift = cv::xfeatures2d::SIFT::create(nFeatures);
+    cv::Ptr<Feature2D> sift = cv::xfeatures2d::SIFT::create(nFeatures);
 
     //
-    Keyframe Last_KF, Curr_KF;
+    Keyframe Curr_KF;
     Map MapDB;
     Track Track;
-    // std::map< int, std::vector<cv::DMatch>> matches;
-    // int GoodMatchNum = 300;
-
-    // Load img and gt Pose
-    // std::string KFimgPath_ = argv[1];
-    // std::string KFimgPath = KFimgPath_ + "/%04d.png";
-    // if(!video.open(KFimgPath)) return -1;
+    std::vector<Keyframe> KFdb;
+    std::map< int, std::vector<cv::DMatch>> matches;
+    int GoodMatchNum = 1000;
 
     std::string KFgtPosePath = argv[3];
     ReadgtPose(KFgtPosePath, &KFgtPoses);
-
+    
     // Load timestamp
     std::string timestampPath = argv[1];
     ifstream s;
@@ -85,84 +87,140 @@ int main(int argc, char** argv)
         
         std::stringstream ss;
         ss << line;
-        std::string QueryImgsPath1 = QueryPath + "/cam0/data/" + ss.str() +".png";
+        std::string QueryImgsPath1 = QueryPath + "/RectCam0_for_EsPose/" + ss.str() +".png";
         cv::Mat image1 = cv::imread(QueryImgsPath1);
-            std::string QueryImgsPath2 = QueryPath + "/cam1/data/" + ss.str() +".png";
+            std::string QueryImgsPath2 = QueryPath + "/RectCam1_for_EsPose/" + ss.str() +".png";
         cv::Mat image2 = cv::imread(QueryImgsPath2);
-        // Queryimgs1.push_back(img1);
-        // Queryimgs2.push_back(img2);
+
         timestamps.push_back(std::stod(line) * 10e-10);
     
-    
-     
-
-
-    // Main
-    // while(true)
-    // {
-        // cv::Mat image1 = Queryimgs1[KFcnt];
-        // cv::Mat image2 = Queryimgs2[KFcnt];
-        // video >> image;
-        // if(image.empty()) break;
         if (image1.channels() > 1) cv::cvtColor(image1, image1, cv::COLOR_RGB2GRAY);
         if (image2.channels() > 1) cv::cvtColor(image2, image2, cv::COLOR_RGB2GRAY);
-        // MapDB.KFimg[KFcnt] = image;
-        
+    
+     
         std::cout << " KF img Num : " << KFcnt << "  @@@@@@@@@@@@@@@@@ " << std::endl;
     
         /////////// Extract Feature and match //////////////
             
             // extract
-        cv::Mat mask, Descriptors;
-        std::vector<cv::Point2f> keypoint;
-        // Last_KF.EraseClass();
-        // ORBfeatureAndDescriptor(image1, Last_KF.mask, Last_KF.KeyPoints, Last_KF.Descriptors);
-        // ORBfeatureAndDescriptor(image2, Curr_KF.mask, Curr_KF.KeyPoints, Curr_KF.Descriptors);
-        // cv::goodFeaturesToTrack(image, Curr_KF.keypoint, nFeatures, 0.01, 10);
-        // Curr_KF.KeyPoints = Converter::Point2f2KeyPoint(Curr_KF.keypoint);
-        // orb->detectAndCompute(image1, Last_KF.mask, Last_KF.KeyPoints, Last_KF.Descriptors);
-        // orb->detectAndCompute(image2, Curr_KF.mask, Curr_KF.KeyPoints, Curr_KF.Descriptors);
-        // sift->detectAndCompute(image1, Last_KF.mask, Last_KF.KeyPoints, Last_KF.Descriptors);
-        // sift->detectAndCompute(image2, Curr_KF.mask, Curr_KF.KeyPoints, Curr_KF.Descriptors);
+        // cv::Mat mask, Descriptors;
+        // std::vector<cv::Point2f> keypoint;
+
 
 /////////// stereo KLT initial /////////////
         if(KFcnt == 0){
+            
             Curr_KF.EraseClass();
-            cv::goodFeaturesToTrack(image1, Curr_KF.lkeypoint, max_keypoint, 0.01, 10);
-            std::cout << "feature num : " << Curr_KF.lkeypoint.size() << std::endl;
-            OpticalFlowStereo(image1, image2, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
-            std::cout << "track feature num : " << Curr_KF.lkeypoint.size() << std::endl;
+            Curr_KF.limage = image1.clone();
+            Curr_KF.rimage = image2.clone();
+            Curr_KF.timeStamp = timestamps[KFcnt];
+            // test sift
+            sift->detectAndCompute(image1, Curr_KF.lmask, Curr_KF.lKeyPoints, Curr_KF.lDescriptors);
+            sift->detectAndCompute(image2, Curr_KF.rmask, Curr_KF.rKeyPoints, Curr_KF.rDescriptors);
+            // ORBfeatureAndDescriptor(Curr_KF.limage, Curr_KF.lmask, Curr_KF.lKeyPoints, Curr_KF.lDescriptors);
+            // ORBfeatureAndDescriptor(Curr_KF.rimage, Curr_KF.rmask, Curr_KF.rKeyPoints, Curr_KF.rDescriptors);
+            
+            cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_L2, true);
+            // cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_HAMMING, true);
+            std::vector<cv::DMatch> DescriptorMatch;
+            matcher->match(Curr_KF.lDescriptors, Curr_KF.rDescriptors, DescriptorMatch);
+            std::sort(DescriptorMatch.begin(), DescriptorMatch.end());            
+            std::vector<cv::DMatch> goodDescriptorMatch(DescriptorMatch.begin(), DescriptorMatch.begin() + DescriptorMatch.size());
+            //
+            
+            std::cout << "feature Num  : " << goodDescriptorMatch.size() << std::endl;
+            Curr_KF.lkeypoint.resize(goodDescriptorMatch.size());
+            Curr_KF.rkeypoint.resize(goodDescriptorMatch.size());
+            for(int i = 0; i < goodDescriptorMatch.size(); i++){
+                Curr_KF.lkeypoint[i] = Curr_KF.lKeyPoints[goodDescriptorMatch[i].queryIdx].pt;
+                Curr_KF.rkeypoint[i] = Curr_KF.rKeyPoints[goodDescriptorMatch[i].trainIdx].pt;
+            }
+            
+            // cv::goodFeaturesToTrack(Curr_KF.limage, Curr_KF.lkeypoint, max_keypoint, 0.01, minDis);
+            // std::cout << "feature num : " << Curr_KF.lkeypoint.size() << std::endl;
+            // OpticalFlowStereo(Curr_KF.limage, Curr_KF.rimage, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            // std::cout << "track feature num : " << Curr_KF.rkeypoint.size() << std::endl;
+            RemoveOutlierMatch(Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            std::cout << "after remove outlier stereo sift(orb) 2d match : " << Curr_KF.lkeypoint.size() << std::endl;
             
             // draw left and right match image
-            cv::Mat MatchImg = DrawKLTmatchLine(image1, image2, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
-            cv::imshow("matchImg", MatchImg);
-            
+            cv::Mat KFStereoMatchImg = DrawKLTmatchLine(Curr_KF.limage, Curr_KF.rimage, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            cv::imshow("KFStereoMatchImg", KFStereoMatchImg);
+            cv::Mat KFStereoMatchImg_ = DrawKLTmatchLine_vertical(Curr_KF.limage, Curr_KF.rimage, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            cv::imshow("KFStereoMatchImg_vertical", KFStereoMatchImg_);
+
+
+////////////////////////////////////////////////
+
+
             // // Triangulation
             cv::Mat P0 = K * Vec6To34ProjMat(KFgtPoses[KFcnt]);
-            cv::Mat P1 = K * rVec6To34ProjMat(KFgtPoses[KFcnt]);
+
+            cv::Mat P1 =  K * rVec6To34ProjMat(KFgtPoses[KFcnt]);
             cv::Mat X;
             cv::triangulatePoints(P0, P1, Curr_KF.lkeypoint, Curr_KF.rkeypoint, X);
-            std::vector<cv::Point3f> MapPts = ToXYZ(X);
-            // std::cout << Proj34ToPose(P0) << std::endl;
+            std::vector<cv::Point3d> MapPts = ToXYZ(X);
+            std::cout << " MP num before remove outlier : " << MapPts.size() << std::endl;
+            RemoveMPoutlier(MapPts, Curr_KF.lkeypoint, Curr_KF.rkeypoint, KFgtPoses[KFcnt]);
+            std::cout << " MP num after remove outlier : " << MapPts.size() << std::endl;
+std::cout << "cam0 - cam1 extrinsic : << " << GetCam1ToCam0(Cam0ToBodyData, Cam1ToBodyData) << std::endl;
+            std::cout << (P0) << std::endl;
             // std::cout << GetCam1ToCam0(Cam0ToBodyData, Cam1ToBodyData) << std::endl;
-            // std::cout << Proj34ToPose(P1) << std::endl;
+            std::cout << "p1" << (P1) << std::endl;
             // for(int i = 0; i < MapPts.size(); i++) std::cout << MapPts[i] << std::endl;
             
             // Save id and MapDB
             for(int i = maxIds; i < maxIds + Curr_KF.lkeypoint.size(); i++){
                 Curr_KF.lptsIds.push_back(i);
-                MapDB.Map3dpts.push_back(MapPts[i - maxIds]);
-                MapDB.MapIds.push_back(i);
+                MapDB.Map3dpts[i] = (MapPts[i - maxIds]);
             }
+            Curr_KF.KFid = KFcnt;
+            Curr_KF.camPose = KFgtPoses[KFcnt];
+            Keyframe copy_KF = Curr_KF;
+            KFdb.push_back(copy_KF);
+        
+        ceres::Problem init_BA; 
+        for(int j = 0; j < KFdb.size(); j++){
+            
+            Vector6d camProj = ToProjection(KFgtPoses[KFcnt]);
+
+            
+            for ( int i = 0; i < KFdb[j].lkeypoint.size(); i++){
+                
+                ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(KFdb[j].lkeypoint[i], camProj, fx, cv::Point2d(cx, cy));
+                int id = KFdb[j].lptsIds[i];
+                double* X = (double*)(&(MapDB.Map3dpts[id]));
+                init_BA.AddResidualBlock(map_only_cost_func, NULL, X); 
+            }
+        }
+
+        ceres::Solver::Options options;
+        options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+        options.num_threads = 8;
+        options.minimizer_progress_to_stdout = false;
+        ceres::Solver::Summary summary;
+        std::cout << " Start optimize map point " << std::endl;
+        ceres::Solve(options, &init_BA, &summary);
+        std::cout << summary.BriefReport() << std::endl;                
+        std::cout << " End optimize map point " << std::endl;
+
+
+
             maxIds += Curr_KF.lkeypoint.size();
             std::cout << Curr_KF.lptsIds.size() << std::endl;
+
             // prepare track
             std::cout << "prepare track" << std::endl;
             Track.EraseData();
-                        std::cout << "prepare track" << std::endl;
-
             Track.SetLastData(Curr_KF.lkeypoint, Curr_KF.lptsIds, image1);
+            
             KFcnt++;
+            
+            // Visualize
+            glClear(GL_COLOR_BUFFER_BIT);
+            showMP(MapDB.Map3dpts);
+            glFlush();
+            cv::waitKey();
             continue;
         }
 
@@ -171,101 +229,186 @@ int main(int argc, char** argv)
         Track.SetCurrImg(image1);
         OpticalFlowTracking(Track.last_image, Track.curr_image, Track.last_trackingPts, Track.curr_trackingPts, Track.trackIds);
         int afterTrackNum = Track.curr_trackingPts.size();
+        std::cout << " Tracking ... " << afterTrackNum << "  " << Track.last_trackingPts.size() << std::endl;
         Track.trackingRatio = (double)afterTrackNum / (double)Track.beforetrackNum;
         
         cv::Mat MatchImg = DrawKLTmatchLine(Track.last_image, Track.curr_image, Track.last_trackingPts, Track.curr_trackingPts);
-        cv::imshow("matchImg", MatchImg);
+        cv::imshow("TrackingImg", MatchImg);
+        
 
         Track.PrepareNextFrame();
-        std::cout << Track.trackingRatio << std::endl;
+        std::cout << "tracking ratio : " << Track.trackingRatio << std::endl;
+        // cv::waitKey();
         
         // New Keyframe
-        if(Track.trackingRatio < KeyframeTrackRatio){
+        if(Track.trackingRatio < KeyframeTrackRatio || afterTrackNum < TrackNum){
             
             std::cout << " New Keyframe !! " << std::endl;
             Curr_KF.EraseClass();
-            cv::goodFeaturesToTrack(image1, Curr_KF.lkeypoint, max_keypoint, 0.01, 10);
-            std::cout << "feature num : " << Curr_KF.lkeypoint.size() << std::endl;
-            OpticalFlowStereo(image1, image2, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
-            std::cout << "track feature num : " << Curr_KF.lkeypoint.size() << std::endl;
+            Curr_KF.limage = image1.clone();
+            Curr_KF.rimage = image2.clone();
+            Curr_KF.timeStamp = timestamps[KFcnt];
+            
+           // test sift
+            sift->detectAndCompute(image1, Curr_KF.lmask, Curr_KF.lKeyPoints, Curr_KF.lDescriptors);
+            sift->detectAndCompute(image2, Curr_KF.rmask, Curr_KF.rKeyPoints, Curr_KF.rDescriptors);
+            // ORBfeatureAndDescriptor(image1, Curr_KF.lmask, Curr_KF.lKeyPoints, Curr_KF.lDescriptors);
+            // ORBfeatureAndDescriptor(image2, Curr_KF.rmask, Curr_KF.rKeyPoints, Curr_KF.rDescriptors);
+
+            cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_L2, true);
+            // cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_HAMMING, true);
+            std::vector<cv::DMatch> DescriptorMatch;
+            matcher->match(Curr_KF.lDescriptors, Curr_KF.rDescriptors, DescriptorMatch);
+            std::cout << DescriptorMatch.size() << std::endl;
+            std::sort(DescriptorMatch.begin(), DescriptorMatch.end());            
+            std::vector<cv::DMatch> goodDescriptorMatch(DescriptorMatch.begin(), DescriptorMatch.begin() + DescriptorMatch.size());
+            
+            //
+            std::cout << "feature Num  : " << goodDescriptorMatch.size() << std::endl;
+            Curr_KF.lkeypoint.resize(goodDescriptorMatch.size());
+            Curr_KF.rkeypoint.resize(goodDescriptorMatch.size());
+            for(int i = 0; i < goodDescriptorMatch.size(); i++){
+                Curr_KF.lkeypoint[i] = Curr_KF.lKeyPoints[goodDescriptorMatch[i].queryIdx].pt;
+                Curr_KF.rkeypoint[i] = Curr_KF.rKeyPoints[goodDescriptorMatch[i].trainIdx].pt;
+
+            }
+            
+            // cv::goodFeaturesToTrack(Curr_KF.limage, Curr_KF.lkeypoint, max_keypoint, 0.01, minDis);
+            // std::cout << "feature num : " << Curr_KF.lkeypoint.size() << std::endl;
+            // OpticalFlowStereo(Curr_KF.limage, Curr_KF.rimage, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            // std::cout << "track feature num : " << Curr_KF.rkeypoint.size() << std::endl;
+            RemoveOutlierMatch(Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            std::cout << "after remove outlier sift match : " << Curr_KF.lkeypoint.size() << std::endl;
 
             // draw left and right match image
-            cv::Mat MatchImg = DrawKLTmatchLine(image1, image2, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
-            cv::imshow("matchImg", MatchImg);
+            cv::Mat KFStereoMatchImg = DrawKLTmatchLine(Curr_KF.limage, Curr_KF.rimage, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            cv::imshow("KFStereoMatchImg", KFStereoMatchImg);
+            // cv::Mat KFStereoMatchImg_ = DrawKLTmatchLine_vertical(Curr_KF.limage, Curr_KF.rimage, Curr_KF.lkeypoint, Curr_KF.rkeypoint);
+            // cv::imshow("KFStereoMatchImg_vertical", KFStereoMatchImg_);
 
             // // Triangulation
             cv::Mat P0 = K * Vec6To34ProjMat(KFgtPoses[KFcnt]);
             cv::Mat P1 = K * rVec6To34ProjMat(KFgtPoses[KFcnt]);
+            std::cout << Proj34ToPose(P0) << std::endl;
+            std::cout << GetCam1ToCam0(Cam0ToBodyData, Cam1ToBodyData) << std::endl;
+            std::cout << Proj34ToPose(P1) << std::endl;
+            std::cout << (P0) << std::endl;
+            std::cout << (P1) << std::endl;
             cv::Mat X;
             cv::triangulatePoints(P0, P1, Curr_KF.lkeypoint, Curr_KF.rkeypoint, X);
-            std::vector<cv::Point3f> MapPts = ToXYZ(X);
+            std::vector<cv::Point3d> MapPts_ = ToXYZ(X);
+            std::cout << "MP num : " << MapPts_.size() << std::endl;
+            // for(auto i : MapPts_) std::cout << i << std::endl;
+            RemoveMPoutlier(MapPts_, Curr_KF.lkeypoint, Curr_KF.rkeypoint, KFgtPoses[KFcnt]);
+            std::cout << "after remove MP outlier MP num : " << MapPts_.size() << std::endl;
+
+
 
             // Save id and MapDB
-            for(int i = maxIds; i < maxIds + Curr_KF.lkeypoint.size(); i++){
-                Curr_KF.lptsIds.push_back(i);
-                MapDB.Map3dpts.push_back(MapPts[i - maxIds]);
-                MapDB.MapIds.push_back(i);
+            const int MaxId = maxIds;
+            int newPtsNum(0), samePtsNum(0);
+            for(int i = MaxId; i < MaxId + Curr_KF.lkeypoint.size(); i++){
+                
+                bool samePts = false;
+                for(int j = 0; j < Track.curr_trackingPts.size(); j++){
+                    double diff_x = std::fabs(Curr_KF.lkeypoint[i - MaxId].x - Track.curr_trackingPts[j].x);
+                    double diff_y = std::fabs(Curr_KF.lkeypoint[i - MaxId].y - Track.curr_trackingPts[j].y);
+                    
+                    if(diff_x < 2.0 && diff_y < 2.0 ) samePts = true;
+                    if(samePts){    
+                    
+                        // std::cout << "Find same point " << std::endl;
+                        int idpts = Track.trackIds[j];
+                        Curr_KF.lptsIds.push_back(idpts);
+                        samePtsNum++;
+                        break;
+                    }
+                }
+                if(!samePts){
+
+                    // std::cout << " New point " << std::endl;
+                    Curr_KF.lptsIds.push_back(maxIds);
+                    MapDB.Map3dpts[maxIds] = (MapPts_[i - MaxId]);
+                    // MapDB.MapIds.push_back(maxIds);
+                    maxIds++;
+                    newPtsNum++;
+
+                }
+            }
+            Curr_KF.camPose = KFgtPoses[KFcnt];
+            Curr_KF.KFid = KFcnt;
+            Keyframe copy_KF = Curr_KF;
+            KFdb.push_back(copy_KF);
+
+            // Optimize !!
+        ceres::Problem globalBA; 
+        for(int j = 0; j < KFdb.size(); j++){
+            
+            Vector6d camProj = ToProjection(KFdb[j].camPose);
+
+            
+            for ( int i = 0; i < KFdb[j].lkeypoint.size(); i++){
+                
+                ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(KFdb[j].lkeypoint[i], camProj, fx, cv::Point2d(cx, cy));
+                int id = KFdb[j].lptsIds[i];
+                double* X = (double*)(&(MapDB.Map3dpts[id]));
+                globalBA.AddResidualBlock(map_only_cost_func, new ceres::CauchyLoss(lossfuncParameter), X); 
             }
         }
-        // initial value
-        // if(KFcnt == 0){
-        //     KFcnt++;
-        //     Last_KF = Curr_KF;
-        //     continue;
-        // }
 
-            // match
-        // cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_HAMMING, true);
-        // cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_L2, true);
-        // // cv::Ptr<cv::DescriptorMatcher> matcher = cv::FlannBasedMatcher::create();
-        // std::vector<cv::DMatch> DescriptorMatch;
-        // matcher->match(Last_KF.Descriptors, Curr_KF.Descriptors, DescriptorMatch);
-        // std::sort(DescriptorMatch.begin(), DescriptorMatch.end());
-        // matches[KFcnt - 1] = DescriptorMatch;
-        
-        // // Last_KF.keypoint.clear();
-        // for(int i = 0; i < matches[KFcnt - 1].size(); i++){
-        //     Last_KF.keypoint.push_back(Last_KF.KeyPoints[matches[KFcnt - 1][i].queryIdx].pt);
-        //     Curr_KF.keypoint.push_back(Curr_KF.KeyPoints[matches[KFcnt - 1][i].trainIdx].pt);
-        // }
-        // cv::Mat E, inlier_mask, R, t;
-        // std::cout << Last_KF.keypoint.size() << " " << Curr_KF.keypoint.size() << std::endl;
-        // E = cv::findEssentialMat(Last_KF.keypoint, Curr_KF.keypoint, fx, c, cv::RANSAC, 0.99, 1, inlier_mask);
-        // int inlierNum = cv::recoverPose(E, Last_KF.keypoint, Curr_KF.keypoint, R, t, fx, c, inlier_mask);
-        // std::cout << inlierNum << std::endl;
-        // // Triangulation
-        // cv::Mat P0 = K * Vec6To34Mat(KFgtPoses[KFcnt - 1]);
-        // cv::Mat P1 = K * Vec6To34Mat(KFgtPoses[KFcnt]);
-        // cv::Mat X;
-        // cv::triangulatePoints(P0, P1, Last_KF.keypoint, Curr_KF.keypoint, X);
-        // std::vector<cv::Point3f> MapPts = ToXYZ(X);
-        // std::vector<float> ReprojErr = ReprojectionError(MapPts, Last_KF.keypoint, To44RT(KFgtPoses[KFcnt - 1]));
-        // /////////// Remove Outlier ////////////////////
+        ceres::Solver::Options options;
+        options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+        options.max_num_iterations = 1000;
+        options.num_threads = 8;
+        options.minimizer_progress_to_stdout = false;
+        ceres::Solver::Summary summary;
+        std::cout << " Start optimize map point " << std::endl;
+        ceres::Solve(options, &globalBA, &summary);
+        std::cout << summary.BriefReport() << std::endl;                
+        std::cout << " End optimize map point " << std::endl;           
+
+
+
+
+            std::cout << Curr_KF.lkeypoint.size() << " " << Curr_KF.lptsIds.size() << std::endl;
+            std::cout << "new num : " << newPtsNum << "    same num : " << samePtsNum << std::endl;
+            std::cout << " total landmark Num : " << MapDB.Map3dpts.size() << std::endl;
+            std::cout << " Total Keyframe Num  : " << KFdb.size() << std::endl;
+
+
+
+            // prepare track
+            std::cout << "prepare track" << std::endl;
+            Track.EraseData();
+            Track.SetLastData(Curr_KF.lkeypoint, Curr_KF.lptsIds, image1);
             
-        //     // hamming distance
-        // std::vector<cv::DMatch> GoodDescriptorMatch(DescriptorMatch.begin(), DescriptorMatch.begin() + GoodMatchNum);
-        
-        // // Draw Match Img
-        // cv::Mat MatchImg;
-        // cv::drawMatches(image1, Last_KF.KeyPoints, image2, Curr_KF.KeyPoints, GoodDescriptorMatch, MatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
-        // cv::imshow("Matchimg", MatchImg);
+            //  cv::waitKey();
+        }
 
-
-        cv::waitKey();
-        // Last_KF.EraseClass();
-        // Last_KF = Curr_KF;
+        // Visualize
+        glClear(GL_COLOR_BUFFER_BIT);
+        showMP(MapDB.Map3dpts);
+        for(int i = 0; i < KFdb.size(); i++){
+            int idx = KFdb[i].KFid;
+            Eigen::Matrix4d Pose44 = To44RT(KFgtPoses[idx]);
+            show_trajectory_keyframe(Pose44, 0.0, 0.0, 1.0, 0.1, 0.2);
+        }
+        glFlush();
+        cv::imshow("current left view", image1);
+        cv::waitKey(10);
         KFcnt++;
     // }
 }
 s.close();
-        // descriptor distance and reprojection err?
-
-    // id correspondance
-
-
-
-
-    // Full BA
 
     return 0;
 }
+
+
+
+
+
+
+
+
+        

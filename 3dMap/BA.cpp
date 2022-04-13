@@ -58,12 +58,12 @@ int main(int argc, char** argv)
         
         int poseidx = FindTimestampIdx(DB->timestamps[imgIdx], timeStamps);
         std::vector<cv::Point3d> Landmarks = DB->GetKF3dPoint(imgIdx);
-        std::vector<cv::Point3f> Landmarksf;
-        for(auto i : Landmarks)
-            Landmarksf.push_back(cv::Point3f((float)i.x, (float)i.y, (float)i.z));
+        // std::vector<cv::Point3f> Landmarksf;
+        // for(auto i : Landmarks)
+        //     Landmarksf.push_back(cv::Point3f((float)i.x, (float)i.y, (float)i.z));
         std::vector<cv::KeyPoint> imgPoints_ = DB->GetKF2dPoint(imgIdx);
         std::vector<cv::Point2f> imgPoints = Converter::KeyPoint2Point2f(imgPoints_);
-        std::vector<float> ReprojErr = ReprojectionError(Landmarksf, imgPoints, To44RT(EurocgtPoses[poseidx]));
+        std::vector<float> ReprojErr = ReprojectionError(Landmarks, imgPoints, To44RT(EurocgtPoses[poseidx]));
         for(int j = 0; j < ReprojErr.size(); j++){
             if(ReprojErr[j] > 5.0) outlierNum++;
         }

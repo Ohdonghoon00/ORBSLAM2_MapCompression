@@ -22,7 +22,7 @@ std::vector<cv::Point2f> KeyPoint2Point2f(std::vector<cv::KeyPoint> KeyPoints);
 // Eigen::Vector3d To3DOF(Eigen::Quaterniond q);
 
 
-Eigen::Matrix4Xf HomogeneousForm(std::vector<cv::Point3f> Wpts);
+Eigen::Matrix4Xf HomogeneousForm(std::vector<cv::Point3d> Wpts);
 
 
 Eigen::Matrix3Xf HomogeneousForm(std::vector<cv::Point2f> Imgpts);

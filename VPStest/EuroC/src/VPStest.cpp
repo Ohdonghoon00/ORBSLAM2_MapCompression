@@ -218,15 +218,18 @@ int VPStest::FindReferenceKF(DataBase* DB, QueryDB query)
         std::sort(MatchResults[KFid].begin(), MatchResults[KFid].end());
         std::vector<cv::DMatch> Goodmatches(MatchResults[KFid].begin(), MatchResults[KFid].begin() + GoodMatchNum); 
 
-        for(int j = 0; j < Goodmatches.size(); j++){
-            cv::Point3f Match3dPoint(   DisOrderMatch3dpoint[Goodmatches[j].trainIdx].x,
-                                        DisOrderMatch3dpoint[Goodmatches[j].trainIdx].y,
-                                        DisOrderMatch3dpoint[Goodmatches[j].trainIdx].z );
+        // for(int j = 0; j < Goodmatches.size(); j++){
+        //     cv::Point3f Match3dPoint(   DisOrderMatch3dpoint[Goodmatches[j].trainIdx].x,
+        //                                 DisOrderMatch3dpoint[Goodmatches[j].trainIdx].y,
+        //                                 DisOrderMatch3dpoint[Goodmatches[j].trainIdx].z );
 
-            MatchDB3dPoints[KFid].push_back(Match3dPoint);
+        //     MatchDB3dPoints[KFid].push_back(Match3dPoint);
             
-            cv::Point2f MatchQ2dPoint(query.qKeypoints[Goodmatches[j].queryIdx].pt);
-            MatchQ2dPoints[KFid].push_back(MatchQ2dPoint);
+        //     cv::Point2f MatchQ2dPoint(query.qKeypoints[Goodmatches[j].queryIdx].pt);
+        //     MatchQ2dPoints[KFid].push_back(MatchQ2dPoint);
+        // }
+        for(int i = 0; i < q2fpts.size(); i++){
+            
         }
         cv::Mat R, T, RT, inliers;
         cv::solvePnPRansac(MatchDB3dPoints[KFid], MatchQ2dPoints[KFid], K, cv::noArray(), R, T, false, 1000, 3.0F, 0.99, inliers, 0 );
