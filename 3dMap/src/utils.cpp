@@ -299,8 +299,8 @@ Eigen::Vector3d ToAxis(Eigen::Matrix4d LidarRotation)
 Vector6d ToProjection(Vector6d pose)
 {
     Eigen::Matrix4d pos = To44RT(pose);
-    pos = pos.inverse();
-    Vector6d proj = To6DOF(pos);
+    Eigen::Matrix4d pos_ = pos.inverse();
+    Vector6d proj = To6DOF(pos_);
     return proj;
 }
 
@@ -381,7 +381,7 @@ std::vector<float> ReprojectionError(std::vector<cv::Point3d> WPts, std::vector<
                                      (ImagePoints(1, i) - ReprojectPoints(1, i)) );
         // std::cout << ReprojectErr[i] << " ";
     }
-    std::cout << std::endl;
+    // std::cout << std::endl;
 
     return ReprojectErr;
 }
@@ -440,7 +440,59 @@ int FindTimestampIdx(const double a, const std::vector<double> b)
     }
 
 
-void OpticalFlowStereo(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts)
+void OpticalFlowStereo( cv::Mat previous, 
+                        cv::Mat current, 
+                        std::vector<cv::Point2f> &previous_pts, 
+                        std::vector<cv::Point2f> &current_pts,
+                        std::vector<cv::Mat> &lDescriptor)
+{
+    std::vector<uchar> status;
+    cv::Mat err;
+
+    cv::calcOpticalFlowPyrLK(previous, current, previous_pts, current_pts, status, err);
+
+
+    const int image_x_size_ = previous.cols;
+    const int image_y_size_ = previous.rows;
+
+    // remove err point
+    int indexCorrection = 0;
+
+    for( int i = 0; i < status.size(); i++)
+    {
+        cv::Point2f pt = current_pts.at(i- indexCorrection);
+        if((pt.x < 0)||(pt.y < 0 )||(pt.x > image_x_size_)||(pt.y > image_y_size_)) status[i] = 0;
+        if (status[i] == 0)	
+        {
+                    
+                    previous_pts.erase ( previous_pts.begin() + i - indexCorrection);
+                    current_pts.erase (current_pts.begin() + i - indexCorrection);
+                    lDescriptor.erase(lDescriptor.begin() + i - indexCorrection);
+                    indexCorrection++;
+        }
+
+    }
+    
+    
+
+    // int indexCorrection_ = 0;
+    // int ptsNum = previous_pts.size();
+    // for(int i = 0; i < ptsNum; i++){
+    //     double diff_x = std::fabs(previous_pts[i - indexCorrection_].x - current_pts[i - indexCorrection_].x);
+    //     double diff_y = std::fabs(previous_pts[i - indexCorrection_].y - current_pts[i - indexCorrection_].y);
+    //     std::cout << diff_x << "  " << diff_y << std::endl;
+    //     if(diff_x > 30 || diff_y > 15){
+    //         previous_pts.erase ( previous_pts.begin() + i - indexCorrection_);
+    //         current_pts.erase (current_pts.begin() + i - indexCorrection_);
+    //         indexCorrection_++;           
+    //     }
+    // }
+}
+
+void OpticalFlowStereo( cv::Mat previous, 
+                        cv::Mat current, 
+                        std::vector<cv::Point2f> &previous_pts, 
+                        std::vector<cv::Point2f> &current_pts)
 {
     std::vector<uchar> status;
     cv::Mat err;
@@ -467,19 +519,6 @@ void OpticalFlowStereo(cv::Mat previous, cv::Mat current, std::vector<cv::Point2
         }
 
     }
-    
-    // int indexCorrection_ = 0;
-    // int ptsNum = previous_pts.size();
-    // for(int i = 0; i < ptsNum; i++){
-    //     double diff_x = std::fabs(previous_pts[i - indexCorrection_].x - current_pts[i - indexCorrection_].x);
-    //     double diff_y = std::fabs(previous_pts[i - indexCorrection_].y - current_pts[i - indexCorrection_].y);
-    //     std::cout << diff_x << "  " << diff_y << std::endl;
-    //     if(diff_x > 30 || diff_y > 15){
-    //         previous_pts.erase ( previous_pts.begin() + i - indexCorrection_);
-    //         current_pts.erase (current_pts.begin() + i - indexCorrection_);
-    //         indexCorrection_++;           
-    //     }
-    // }
 }
 
 void OpticalFlowTracking(cv::Mat previous, cv::Mat current, std::vector<cv::Point2f> &previous_pts, std::vector<cv::Point2f> &current_pts, std::vector<int> &trackIds)
@@ -537,9 +576,10 @@ cv::Mat DrawKLTmatchLine(cv::Mat image1, cv::Mat image2, std::vector<cv::Point2f
     }
     if (MatchImg.channels() < 3) cv::cvtColor(MatchImg, MatchImg, cv::COLOR_GRAY2RGB);
     for(int i = 0; i < previous_pts.size(); i++){
-        cv::line(MatchImg, previous_pts[i], rImgPtsf[i], cv::Scalar(0,255,0), 1);
-        cv::circle(MatchImg, previous_pts[i], 3, cv::Scalar(255,0, 0), 1);
-        cv::circle(MatchImg, rImgPtsf[i], 3, cv::Scalar(255,0, 0), 1);
+        cv::Scalar randomColor = cv::Scalar(rand() % 255,rand() % 255,rand() % 255);
+        cv::line(MatchImg, previous_pts[i], rImgPtsf[i], randomColor, 1);
+        cv::circle(MatchImg, previous_pts[i], 3, randomColor, 1);
+        cv::circle(MatchImg, rImgPtsf[i], 3, randomColor, 1);
     }
 
     return MatchImg.clone();
@@ -557,15 +597,21 @@ cv::Mat DrawKLTmatchLine_vertical(cv::Mat image1, cv::Mat image2, std::vector<cv
     }
     if (MatchImg.channels() < 3) cv::cvtColor(MatchImg, MatchImg, cv::COLOR_GRAY2RGB);
     for(int i = 0; i < previous_pts.size(); i++){
-        cv::line(MatchImg, previous_pts[i], rImgPtsf[i], cv::Scalar(0,255,0), 1);
-        cv::circle(MatchImg, previous_pts[i], 3, cv::Scalar(255,0, 0), 1);
-        cv::circle(MatchImg, rImgPtsf[i], 3, cv::Scalar(255,0, 0), 1);
+        cv::Scalar randomColor = cv::Scalar(rand() % 255,rand() % 255,rand() % 255);
+        cv::line(MatchImg, previous_pts[i], rImgPtsf[i], randomColor, 1);
+        cv::circle(MatchImg, previous_pts[i], 3, randomColor, 1);
+        cv::circle(MatchImg, rImgPtsf[i], 3, randomColor, 1);
     }
 
     return MatchImg.clone();
 }
 
-void RemoveMPoutlier(std::vector<cv::Point3d> &mp, std::vector<cv::Point2f> &lpts, std::vector<cv::Point2f> &rpts, const Vector6d pose)
+void RemoveMPoutlier(   std::vector<cv::Point3d> &mp, 
+                        std::vector<cv::Point2f> &lpts, 
+                        std::vector<cv::Point2f> &rpts, 
+                        std::vector<cv::Mat> &ldescriptor, 
+                        std::vector<cv::Mat> &rdescriptor, 
+                        const Vector6d pose)
 {
     Eigen::Matrix<double, 4, 1> initCamView;
     initCamView << 0, 0, 1, 0;
@@ -590,11 +636,13 @@ void RemoveMPoutlier(std::vector<cv::Point3d> &mp, std::vector<cv::Point2f> &lpt
             // Eigen::Vector4d vecMP;
             // vecMP << clone_map_point[i].x, clone_map_point[i].y, clone_map_point[i].z, 0;
 
-            if(currCamView.dot(mpView) < 0 || mpView.dot(mpView) > 100)
+            if(currCamView.dot(mpView) < 0 || mpView.dot(mpView) > 200)
             {
                 mp.erase(mp.begin() + i - indexCorrection);
                 lpts.erase(lpts.begin() + i - indexCorrection);
                 rpts.erase(rpts.begin() + i - indexCorrection);
+                ldescriptor.erase(ldescriptor.begin() + i - indexCorrection);
+                rdescriptor.erase(rdescriptor.begin() + i - indexCorrection);
                 indexCorrection++;
             }
                 
@@ -605,27 +653,41 @@ void RemoveMPoutlier(std::vector<cv::Point3d> &mp, std::vector<cv::Point2f> &lpt
     Eigen::Matrix4d Pose44 = To44RT(pose);
     std::vector<float> reProjErr = ReprojectionError(mp, lpts, Pose44);
     for(int i = 0; i < reProjErr.size(); i++){
-        if(reProjErr[i] > 3.5){
+        if(reProjErr[i] > 3.1){
             mp.erase(mp.begin() + i - indexCorrection_);
             lpts.erase(lpts.begin() + i - indexCorrection_);
             rpts.erase(rpts.begin() + i - indexCorrection_);
+            ldescriptor.erase(ldescriptor.begin() + i - indexCorrection_);
+            rdescriptor.erase(rdescriptor.begin() + i - indexCorrection_);
         }
     }
 }
                         
-void RemoveOutlierMatch(std::vector<cv::Point2f> &lpts, std::vector<cv::Point2f> &rpts)
+void RemoveOutlierMatch(    std::vector<cv::Point2f> &lpts, 
+                            std::vector<cv::Point2f> &rpts, 
+                            std::vector<cv::Mat> &ldescriptor, 
+                            std::vector<cv::Mat> &rdescriptor)
 {
     cv::Mat inlierMask;
-    cv::Mat E = cv::findEssentialMat(lpts, rpts, fx, c, cv::RANSAC, 0.999, 1, inlierMask);
+    cv::Mat E = cv::findEssentialMat(lpts, rpts, fx, c, cv::RANSAC, 0.99, 1, inlierMask);
 
     std::vector<cv::Point2f> clone_lpts(lpts);
     std::vector<cv::Point2f> clone_rpts(rpts);
+    std::vector<cv::Mat> clone_ldes(ldescriptor);
+    std::vector<cv::Mat> clone_rdes(rdescriptor);
+    
     lpts.clear();
     rpts.clear();
+    ldescriptor.clear();
+    rdescriptor.clear();
+    
     for(int i = 0; i < inlierMask.rows; i++){
       if(inlierMask.at<bool>(i, 0) == 1){
+        
         lpts.push_back(clone_lpts[i]);
         rpts.push_back(clone_rpts[i]);
+        ldescriptor.push_back(clone_ldes[i]);
+        rdescriptor.push_back(clone_rdes[i]);
       }
     }    
 }

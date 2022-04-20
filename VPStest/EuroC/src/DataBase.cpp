@@ -35,12 +35,12 @@ cv::Mat DataBase::GetKFMatDescriptor(int idx)
     return KFDescriptor;
 }    
 
-std::vector<cv::Point3f> DataBase::GetKF3dPoint(int idx)
+std::vector<cv::Point3d> DataBase::GetKF3dPoint(int idx)
 {
-    std::vector<cv::Point3f> KFLandmark;
+    std::vector<cv::Point3d> KFLandmark;
     KFLandmark.resize(KFtoMPIdx[idx].size());
     for(size_t i = 0; i < KFtoMPIdx[idx].size(); i++){
-        cv::Point3f landmark3dpoint((float)Landmarks[KFtoMPIdx[idx][i]].x, (float)Landmarks[KFtoMPIdx[idx][i]].y, (float)Landmarks[KFtoMPIdx[idx][i]].z); 
+        cv::Point3f landmark3dpoint(Landmarks[KFtoMPIdx[idx][i]].x, Landmarks[KFtoMPIdx[idx][i]].y, Landmarks[KFtoMPIdx[idx][i]].z); 
         KFLandmark[i] = landmark3dpoint;
     }
 

@@ -43,11 +43,12 @@ int main(int argc, char** argv)
     std::cout << "EurocgtPoses size : " << EurocgtPoses.size() << std::endl;
     
     // Save DB kfPose and descriptor
-    int nFeatures = 4000;
+    int nFeatures = 6000;
     float scaleFactor = 1.2;
     int nlevels = 8;
     int iniThFAST = 20;
     int minThFAST = 7;
+    double lossfuncParameter = 1 / ((fx + fy) / 2);
     ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);    
 
     // int idx = 300;
@@ -96,13 +97,13 @@ int main(int argc, char** argv)
             
             int poseIdx = FindTimestampIdx(DB->timestamps[j], timeStamps);
             // int poseIdx = j;
+            std::cout << imgPoints.size() << " ";
             Vector6d camProj = ToProjection(EurocgtPoses[poseIdx]);
             for ( int i = 0; i < imgPoints.size(); i++){
-                // std::cout << KeyPointInMap_[i] << " ";
                 ceres::CostFunction* map_only_cost_func = map_point_only_ReprojectionError::create(imgPoints[i], camProj, fx, cv::Point2d(cx, cy));
                 int id = DB->KFtoMPIdx[j][i];
                 double* X = (double*)(&(DB->Landmarks[id]));
-                global_BA.AddResidualBlock(map_only_cost_func, NULL, X); 
+                global_BA.AddResidualBlock(map_only_cost_func, new ceres::CauchyLoss(lossfuncParameter), X); 
             }
             cv::Mat mask, Descriptors;
             std::vector<cv::KeyPoint> keypoint;

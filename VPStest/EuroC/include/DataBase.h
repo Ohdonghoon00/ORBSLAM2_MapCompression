@@ -41,7 +41,7 @@ public:
 
 
     cv::Mat GetKFMatDescriptor(int idx);
-    std::vector<cv::Point3f> GetKF3dPoint(int idx);
+    std::vector<cv::Point3d> GetKF3dPoint(int idx);
     std::vector<cv::KeyPoint> GetKFkeypoint(int idx);
     std::vector<cv::Point2f> GetKF2fpts(int idx);
     cv::Mat GetNearReferenceKFMatDescriptor(int rkidx, int nearRkN);

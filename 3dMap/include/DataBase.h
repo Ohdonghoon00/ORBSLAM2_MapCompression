@@ -39,7 +39,7 @@ public:
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version);
 
-    void SaveResultToDB(DataBase *db, Map map, std::vector<Keyframe> kf);
+    void SaveResultToDB(Map *map, std::vector<Keyframe> *kf);
 
 
     cv::Mat GetKFMatDescriptor(int idx);

@@ -24,9 +24,11 @@ public:
     
     cv::Mat lmask, rmask;
     cv::Mat lDescriptors, rDescriptors;
+    std::vector<cv::Mat> l_descriptors, r_descriptors;
     std::vector<cv::KeyPoint> lKeyPoints, rKeyPoints;
 
-
+    // for dbow2
+    cv::Mat descriptors;
 
     Keyframe(const Keyframe &tc)
     {
@@ -43,30 +45,32 @@ public:
         rmask = tc.rmask;
         lDescriptors = tc.lDescriptors;
         rDescriptors = tc.rDescriptors;
+        l_descriptors = tc.l_descriptors;
+        r_descriptors = tc.r_descriptors;
 
         limage = tc.limage;
         rimage = tc.rimage;
+
+        descriptors = tc.descriptors;
     }
 
     void EraseClass()
     {
         lkeypoint.clear();
-        // std::vector<cv::Point2f>().swap(lkeypoint);
         rkeypoint.clear();
-        // std::vector<cv::Point2f>().swap(rkeypoint);
         lptsIds.clear();
-        // std::vector<int>().swap(lptsIds);
         
         rKeyPoints.clear();
-        // std::vector<cv::KeyPoint>().swap(rKeyPoints);
         lKeyPoints.clear();
-        // std::vector<cv::KeyPoint>().swap(lKeyPoints);        
         lmask.release();
-        lDescriptors.release();
         rmask.release();
+        lDescriptors.release();
         rDescriptors.release();
+        l_descriptors.clear();
+        r_descriptors.clear();
         limage.release();
         rimage.release();
+        descriptors.release();
     }
 };
 
@@ -87,11 +91,8 @@ struct Track
     void EraseData()
     {
         curr_trackingPts.clear();
-        // std::vector<cv::Point2f>().swap(curr_trackingPts);
         last_trackingPts.clear();
-        // std::vector<cv::Point2f>().swap(last_trackingPts);
         trackIds.clear();   
-        // std::vector<int>().swap(trackIds);
         curr_image.release();
         last_image.release();
     }

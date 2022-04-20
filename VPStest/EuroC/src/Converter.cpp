@@ -57,13 +57,13 @@ Eigen::Vector3d To3DOF(Eigen::Quaterniond q)
     return r_pose;
 }
 
-Eigen::Matrix4Xf HomogeneousForm(std::vector<cv::Point3f> Wpts)
+Eigen::Matrix4Xf HomogeneousForm(std::vector<cv::Point3d> Wpts)
 {
     Eigen::Matrix4Xf WPts(4, Wpts.size());
     for(int i = 0; i < Wpts.size(); i++){
-        WPts(0, i) = Wpts[i].x;
-        WPts(1, i) = Wpts[i].y;
-        WPts(2, i) = Wpts[i].z;
+        WPts(0, i) = (float)Wpts[i].x;
+        WPts(1, i) = (float)Wpts[i].y;
+        WPts(2, i) = (float)Wpts[i].z;
         WPts(3, i) = 1.0f;
     }
     return WPts;   

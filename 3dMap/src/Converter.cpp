@@ -22,7 +22,6 @@ std::vector<cv::Mat> MatToVectorMat(cv::Mat Descriptor)
     for(int i = 0; i < Descriptor.rows; i++){
         Descriptors[i] = Descriptor.row(i);
     }
-
     return Descriptors;
 }
 

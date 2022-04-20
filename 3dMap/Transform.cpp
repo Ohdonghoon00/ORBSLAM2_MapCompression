@@ -55,9 +55,9 @@ int main(int argc, char** argv)
     
     // Save Pose
     std::ofstream gtCamPose;
-    gtCamPose.open("MH01db_MH01cam0Pose.txt");
+    gtCamPose.open("MH01db_MH02cam0Pose.txt");
     std::ofstream gtTime;
-    gtTime.open("MH01_timeStamp.txt");
+    gtTime.open("MH02_timeStamp.txt");
     int cnt = 0;
     for(int i = 0; i < CamTimestamps.size(); i++){
 

@@ -15,10 +15,10 @@ public:
 
     // Landmark
     std::map< int, cv::Point3d > Map3dpts;
+    std::map< int, cv::Mat> MapDesctriptors;
     // std::vector< int > MapIds;
     
         
-    std::map< int, cv::Mat> MapDesctriptors;
     
     // Keyframe
     std::map< int, cv::Mat > dbow2Descriptors; // for dbow2 LoopClosure

@@ -128,6 +128,22 @@ Vector6d To6DOF(Eigen::Matrix4d RT)
     return Pose;
 }
 
+Vector6d To6DOF(cv::Mat R, cv::Mat T)
+{
+
+
+    Eigen::Matrix4d Pose;
+    cv::Rodrigues(R, R);
+    Pose << R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), T.at<double>(0, 0),
+            R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), T.at<double>(1, 0),
+            R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), T.at<double>(2, 0),
+            0, 0, 0, 1;
+
+    
+    Vector6d Pose_ = To6DOF(Pose);
+    return Pose_;
+}
+
 Eigen::Quaterniond ToQuaternion(const Vector6d Pose)
 {
     Eigen::Matrix4d Pos = To44RT(Pose);
@@ -198,6 +214,15 @@ Vector6d ProjectionTo6DOFPoses(cv::Mat R, cv::Mat T)
     Vector6d Pose_ = To6DOF(Pose);
     return Pose_;   
 }
+
+Vector6d ProjectionTo6DOFPoses(Vector6d proj)
+{
+    Eigen::Matrix4d Proj_ = To44RT(proj);
+    Eigen::Matrix4d Pose = Proj_.inverse();
+    Vector6d Pose_ = To6DOF(Pose);
+    return Pose_;   
+}
+
 
 double ToAngle(Eigen::Matrix4d LidarRotation)
 {

@@ -21,19 +21,34 @@ void DataBase::serialize(Archive &ar, const unsigned int version)
 template void DataBase::serialize(boost::archive::binary_iarchive&, const unsigned int);
 template void DataBase::serialize(boost::archive::binary_oarchive&, const unsigned int);
 
-void DataBase::SaveResultToDB(DataBase *db, Map map, std::vector<Keyframe> kf)
+void DataBase::SaveResultToDB(Map *map, std::vector<Keyframe> *kf)
 {
-    for(int i = 0; i < kf.size(); i++){
+    // db->LeftKFimg.resize(kf->size());
+    // db->RightKFimg.resize(kf->size());
+    std::cout << kf->size() << std::endl;
+    for(int i = 0; i < kf->size(); i++){
         
-        db->LeftKFimg.push_back(kf[i].limage);
-        db->RightKFimg.push_back(kf[i].rimage);
+        std::cout << " KF num : " << i << "     Keypoint num : " << (*kf)[i].lkeypoint.size() << std::endl;
+        LeftKFimg.push_back((*kf)[i].limage);
+        RightKFimg.push_back((*kf)[i].rimage);
         
-        db->KeyPointInMap[i] = Converter::Point2f2KeyPoint(kf[i].lkeypoint);
-        db->KFtoMPIdx[i].assign(kf[i].lptsIds.begin(), kf[i].lptsIds.end());
-        db->timestamps.push_back(kf[i].timeStamp);
-        db->kfPoses[i] = kf[i].camPose;
-
+        KeyPointInMap[i].resize((*kf)[i].lkeypoint.size());
+        KeyPointInMap[i] = Converter::Point2f2KeyPoint((*kf)[i].lkeypoint);
+        
+        KFtoMPIdx[i].assign((*kf)[i].lptsIds.begin(), (*kf)[i].lptsIds.end());
+        timestamps.push_back((*kf)[i].timeStamp);
+        
+        kfPoses[i] = (*kf)[i].camPose;
+        dbow2Descriptors[i] = (*kf)[i].descriptors.clone();
     }
+
+    for(int i = 0; i < map->Map3dpts.size(); i++){
+        Landmarks[i] = map->Map3dpts[i];
+        Descriptors[i] = map->MapDesctriptors[i].clone();
+    }
+
+    
+
 }
 
 cv::Mat DataBase::GetKFMatDescriptor(int idx)

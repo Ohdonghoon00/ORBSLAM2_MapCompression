@@ -11,6 +11,8 @@
 
 #include <opencv2/core.hpp>
 #include "opencv2/opencv.hpp"
+#include <opencv2/objdetect/objdetect.hpp>
+#include "opencv2/xfeatures2d.hpp"
 #include <Eigen/Dense>
 
 
@@ -34,16 +36,24 @@ int main(int argc, char **argv)
     glutInit(&argc, argv);
     initialize_window();
     
-    int nFeatures = 4000;
+    int dbow2Features = 6000;
+    int nFeatures = 5000;
     float scaleFactor = 1.2;
     int nlevels = 8;
     int iniThFAST = 20;
     int minThFAST = 7;
-    ORBextractor ORBfeatureAndDescriptor(nFeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
 
+    // klt
+    int max_keypoint = 2000;
+    int minDis = 7;
+
+    ORBextractor ORBfeatureAndDescriptor(dbow2Features, scaleFactor, nlevels, iniThFAST, minThFAST);
+    // cv::Ptr<cv::ORB> orb = cv::ORB::create(dbow2Features);
+    cv::Ptr<Feature2D> sift = cv::xfeatures2d::SIFT::create(nFeatures, 5, 0.05, 100);
     VPStest VPStest;
     QueryDB query;
     
+    bool failVPS = false;
     
     // VPStestResult* SaveVPStestResult;
     // SaveVPStestResult = new VPStestResult();
@@ -119,19 +129,24 @@ int main(int argc, char **argv)
         std::cout << " Image Num is  :  " << image_num << "      !!!!!!!!!!!!!!!!!!!!" << std::endl;
 
         // debug
-        // if(image_num < 466){
-        //     image_num++;
-        //     continue;
-        // }
-        int add = 1700;
-        while(add < 1770){
-        cv::imshow("dd", query.qImgs[add++]);
-        cv::waitKey();
-
+        if(image_num < 500){
+            image_num++;
+            continue;
         }
+        // int add = 1700;
+        // while(add < 1770){
+        // cv::imshow("dd", query.qImgs[add++]);
+        // cv::waitKey();
+
+        // }
         
         // Extract query feature and descriptor
         ORBfeatureAndDescriptor(query.qImg, query.qMask, query.qKeypoints, query.qDescriptor);
+            // Extract ORB feature for dboW2
+            // cv::Mat mask, descrips;
+            // std::vector<cv::KeyPoint> keypoints_;
+            // orb->detectAndCompute(query.qImg, query.qMask, query.qKeypoints, query.qDescriptor);
+        
         // Place Recognition
         QueryResults ret;
         ret.clear();
@@ -140,7 +155,19 @@ int main(int argc, char **argv)
         std::cout << ret << std::endl;
         std::cout << "High score keyframe  num : "  << ret[0].Id << std::endl;
         int DBow2HighScoreKFId = ret[0].Id;
-    
+            
+        // Query feature 
+        query.qKeypoints.clear();
+        query.qDescriptor.release();
+        // cv::goodFeaturesToTrack(query.qImg , query.qkeypointsf, max_keypoint, 0.01, minDis);
+        // std::cout << "query feature num : " << query.qkeypointsf.size() << std::endl;
+            
+        // // Compute Descripor
+        // query.qKeypoints = Converter::Point2f2KeyPoint(query.qkeypointsf);
+        // sift->compute(query.qImg, query.qKeypoints, query.qDescriptor);
+        
+        cv::Mat mask__;
+        sift->detectAndCompute(query.qImg, mask__, query.qKeypoints, query.qDescriptor);
 
 
         // FindReferenceKF
@@ -152,9 +179,15 @@ int main(int argc, char **argv)
         if(ReferenceKFId == -1){
             image_num++;
             failNum++;
+            failVPS = true;
             // cv::imshow("query", QueryImg);
             // cv::imshow("db top1", DB->LeftKFimg[DBow2HighScoreKFId]);
             // cv::waitKey();
+            // cv::imshow("curr queryImg", query.qImg);
+            ReferenceKFId = ret[0].Id;
+            // cv::Mat Inliers;
+            // std::vector<cv::DMatch> Matches;
+            // double PnPInlierRatio = VPStest.VPStestToReferenceKF(DB, query, ret[0].Id, Pose, Inliers, Matches);
             continue;
         }    
 
@@ -208,34 +241,44 @@ int main(int argc, char **argv)
 
         // Draw Map point and keyframe pose
         // Map Points
-        std::vector<cv::Point3f> LandMarks = DB->GetKF3dPoint(ReferenceKFId);
+        std::vector<cv::Point3d> LandMarks = DB->GetKF3dPoint(ReferenceKFId);
         for(int i = 0; i < LandMarks.size(); i++){
             GLdouble X_map(LandMarks[i].x), Y_map(LandMarks[i].y), Z_map(LandMarks[i].z);
             show_trajectory(X_map, Y_map, Z_map, 0.0, 0.0, 0.0, 0.01);
         }
             
-        // For Draw Inliers Match
-        std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKFkeypoint(ReferenceKFId);
-        cv::Mat allMatchImg;
-        std::cout << " Total Match size : " << Matches.size() << std::endl;
-        std::vector<cv::DMatch> goodMatches(Matches.begin(), Matches.begin() + 100);
-        cv::drawMatches(query.qImg, query.qKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, allMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-        cv::imshow("allMatchImg", allMatchImg);        
+        //////// For Draw Inliers Match //////////
+        // std::vector<cv::KeyPoint> DB2dMatchForDraw = DB->GetKFkeypoint(ReferenceKFId);
+        // cv::Mat allMatchImg;
+        // std::cout << " Total Match size : " << Matches.size() << " db size : " <<  DB2dMatchForDraw.size() << std::endl;
+        // // std::vector<cv::DMatch> goodMatches(Matches.begin(), Matches.begin() + 100);
+        // cv::drawMatches(query.qImg, query.qKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, allMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
+        // cv::imshow("allMatchImg", allMatchImg);        
         
-        VPStest.InlierMatchResult(Matches, Inliers);
-        cv::Mat InlierMatchImg;
-        std::cout << " Inlier Match size : " << Matches.size() << std::endl;
+        // VPStest.InlierMatchResult(Matches, Inliers);
+        // cv::Mat InlierMatchImg;
+        // std::cout << " Inlier Match size : " << Matches.size() << std::endl;
 
-        cv::drawMatches(query.qImg, query.qKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, InlierMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-        cv::imshow("inlierMatchImg", InlierMatchImg);
-        // cv::imshow("Img", QueryImg);
+        // cv::drawMatches(query.qImg, query.qKeypoints, DB->LeftKFimg[ReferenceKFId], DB2dMatchForDraw, Matches, InlierMatchImg, Scalar::all(-1), Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::DEFAULT);
+        // cv::imshow("inlierMatchImg", InlierMatchImg);
+        
+        /////////// test draw optical flow inlier match /////////
+        cv::Mat allKLTMatchImg = VPStest.DrawKLTmatchLine(DB->LeftKFimg[ReferenceKFId], query.qImg, query.dbKLTpts, query.qKLTpts);
+        cv::imshow("allKLTMatchImg", allKLTMatchImg);        
+        VPStest.InlierMatchResult(query.dbKLTpts, query.qKLTpts, Inliers);
+        cv::Mat inlierKLTMatchImg = VPStest.DrawKLTmatchLine(DB->LeftKFimg[ReferenceKFId], query.qImg, query.dbKLTpts, query.qKLTpts);
+        cv::imshow("inlierKLTMatchImg", inlierKLTMatchImg);
+        
+        
+        
+        cv::imshow("curr queryImg", query.qImg);
         
         // Draw InlierProjectionPoints
-        cv::Mat keyPointsImg = query.qImg.clone();
-        if (keyPointsImg.channels() < 3) cv::cvtColor(keyPointsImg, keyPointsImg, cv::COLOR_GRAY2RGB);
-        for(int i = 0; i < VPStest.qInlier2fpts.size(); i++) cv::circle(keyPointsImg, VPStest.qInlier2fpts[i], 3, cv::Scalar(0, 255, 0), 1);
-        for(int i = 0; i < VPStest.projection2fpts.size(); i++) cv::circle(keyPointsImg, VPStest.projection2fpts[i], 3, cv::Scalar(255, 0, 0), 1);
-        cv::imshow("ProjImg", keyPointsImg);
+        // cv::Mat keyPointsImg = query.qImg.clone();
+        // if (keyPointsImg.channels() < 3) cv::cvtColor(keyPointsImg, keyPointsImg, cv::COLOR_GRAY2RGB);
+        // for(int i = 0; i < VPStest.qInlier2fpts.size(); i++) cv::circle(keyPointsImg, VPStest.qInlier2fpts[i], 3, cv::Scalar(0, 255, 0), 1);
+        // for(int i = 0; i < VPStest.projection2fpts.size(); i++) cv::circle(keyPointsImg, VPStest.projection2fpts[i], 3, cv::Scalar(255, 0, 0), 1);
+        // cv::imshow("ProjImg", keyPointsImg);
 
         // VPS Result Pose
         show_trajectory_keyframe(Pose, 0.0, 0.0, 1.0, 0.1, 0.2);
@@ -253,7 +296,11 @@ int main(int argc, char **argv)
         // if(key == 32){
         //     key = cv::waitKey();
         // }
-        cv::waitKey();
+        cv::waitKey(10);
+        // if(failVPS){
+        //  failVPS = false;
+        //  cv::waitKey();
+        // }    
         
         image_num++;
         std::cout << std::endl;
